@@ -2,6 +2,16 @@
 
 	* README.md (Usage): New section.
 
+	* cl-concord.lisp: Export :genre-name, :genre-ds, :object,
+	:decode-object, :object-genre, :object-id, :object-get,
+	:define-object and :object-spec.
+	(ds-set-atom): Fixed.
+	(ds-set-list): Fixed.
+	(decode-object): Fixed.
+	(object-spec): Fixed.
+
+2024-04-16  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp: New file.
 
 2024-04-14  MORIOKA Tomohiko  <tomo.git@chise.org>
