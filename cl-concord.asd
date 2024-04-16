@@ -1,6 +1,6 @@
 (defsystem :cl-concord
   :description "CONCORD implementation based on Common Lisp"
-  :version "0.0"
+  :version "0.1"
   :author "Tomohiko Morioka"
   :licence "LGPL"
   :depends-on (:cl-redis)
