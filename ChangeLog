@@ -10,6 +10,8 @@
 	(decode-object): Fixed.
 	(object-spec): Fixed.
 
+	* cl-concord.asd (version): Update to "0.1".
+
 2024-04-16  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: New file.
