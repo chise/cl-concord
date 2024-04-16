@@ -6,7 +6,11 @@
   (:use :cl)
   (:export
    :genre
-   :object :object-put
+   :genre-name :genre-ds
+   :object :decode-object
+   :object-genre :object-id
+   :object-put :object-get
+   :define-object :object-spec
    :metadata-feature-name-p :id-feature-name-p
    :sequence-list-p))
 
@@ -96,7 +100,7 @@
 	default-value)))
 
 (defmethod ds-set-atom ((ds redis-ds) key value)
-  (when (string= (red:set key value) "OK")
+  (when (string= (red:set key (format nil "~S" value)) "OK")
     value))
 
 (defmethod ds-del ((ds redis-ds) key)
@@ -105,7 +109,10 @@
 (defmethod ds-set-list ((ds redis-ds) key value)
   (let (ret)
     (red:del key)
-    (when (integerp (setq ret (apply #'red:rpush key value)))
+    (when (integerp (setq ret (apply #'red:rpush key
+				     (mapcar (lambda (unit)
+					       (format nil "~S" unit))
+					     value))))
       (values value ret))))
 
 (defmethod ds-get-list ((ds redis-ds) key)
@@ -118,7 +125,6 @@
 	(t
 	 (ds-get-atom ds key default-value)
 	 )))
-
 
 (defmethod ds-get-object-spec ((ds redis-ds) genre-name id)
   (let ((pat (format nil "~a:obj:~a;" genre-name id))
@@ -172,7 +178,7 @@
 	((symbolp genre)
 	 (setq genre (genre genre))
 	 ))
-  (let ((index (format nil "~a:idx:~a;~a"
+  (let ((index (format nil "~a:idx:~a;~(~a~)"
 		       (genre-name genre) id-feature id)))
     (ds-get-atom (genre-ds genre) index)))
   
@@ -290,9 +296,5 @@
 
 (defmethod object-spec ((obj object))
   (let* ((genre (object-genre obj))
-	 (ds (genre-ds genre))
-	 (keys (ds-get-object-spec ds (genre-name genre) (object-id obj))))
-    (mapcar (lambda (key)
-	      (ds-get ds key))
-	    keys)))
-
+	 (ds (genre-ds genre)))
+    (ds-get-object-spec ds (genre-name genre) (object-id obj))))
