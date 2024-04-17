@@ -14,7 +14,7 @@ Database, which is used as the backend of the CHISE system.
 -> test-1
 
 (concord:object-get test-obj '=foo)
--> TEST-ID-1
+-> test-id-1
 
 (concord:decode-object '=foo 'test-id-1 :genre 'test)
 -> #.(concord:object :test 0)
@@ -26,5 +26,17 @@ Database, which is used as the backend of the CHISE system.
 -> "This is sample."
 
 (concord:object-spec test-obj)
--> ((=foo . TEST-ID-1) (=_id . NIL) (name . test-1) (note . "This is sample."))
+-> ((=_id . 0) (note . "This is sample.") (name . "test-1") (=foo . test-id-1))
+
+(setq test-obj2 (concord:define-object :test '((=foo . test-id-2)(name . "test-2"))))
+-> #.(concord:object :test 1)
+
+(concord:object-put test-obj '<-rel (list test-obj2))
+(concord:object-spec test-obj)
+-> ((=_id . 0) (note . "This is sample.") (name . "test-1")
+    (<-rel #.(concord:object :test 1)) (=foo . test-id-1))
+
+(concord:object-spec test-obj2)
+-> ((=foo . test-id-2) (name . "test-2") (=_id . 1)
+    (->rel #.(concord:object :test 0)))
 ```
