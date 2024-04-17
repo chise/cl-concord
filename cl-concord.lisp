@@ -174,7 +174,10 @@
 
 (defmethod generate-object-id ((g genre))
   (let* ((next-id (format nil "~a:sys:next-id" (genre-name g)))
-	 (ret (ds-get-atom (genre-ds g) next-id 0))
+	 (ret (ds-get-atom (genre-ds g) next-id
+			   (if (eq (genre-name g) 'character)
+			       #xF0000
+			       0)))
 	 status)
     (setq status (red:set next-id (1+ ret)))
     (if (string= status "OK")
@@ -269,15 +272,18 @@
 			 (subseq feature-name 2)))
 		)))))
 
-(defun define-object (genre object-spec)
+(defun define-object (genre object-spec &key id)
   (if (symbolp genre)
       (setq genre (genre (or genre 'default))))
-  (let ((id (cdr (assoc '=_id object-spec)))
-	ret obj)
+  (unless id
+    (setq id (cdr (assoc '=_id object-spec))))
+  (let (ret obj)
     (unless id
       (when (setq ret (assoc '=id object-spec))
 	(setq id (cdr ret))))
     (cond (id
+	   ;; (format t "Defining ~s: id=~x~%"
+	   ;;    (genre-name genre) id)
 	   (setq obj (genre-make-object genre id))
 	   )
 	  ((find-if (lambda (feature-pair)
@@ -299,7 +305,7 @@
 (defun normalize-object-representation (object-rep &key genre ds)
   (cond
     ((association-list-p object-rep)
-     (define-object genre object-rep)
+     (define-object 'character object-rep)
      )
     ((and (consp object-rep)
 	  (symbolp (car object-rep))
@@ -346,7 +352,7 @@
 		      (ds-rpush ds rev-key obj))
 		    )))
 	   )
-	  ((sequence-list-p value)
+	  ((and value (sequence-list-p value))
 	   (ds-set-list ds key value)
 	   )
 	  (t
