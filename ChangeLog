@@ -1,5 +1,21 @@
 2024-04-17  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp (object-put): Fix problem of return value for
+	relation features.
+
+	* cl-concord.asd (version): Update to "0.2".
+
+2024-04-17  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp: Modify for cl-chise.
+	(generate-object-id): Use #xF0000 as the initial value for
+	character genre.
+	(define-object): Add keyword argument `id'.
+	(normalize-object-representation): Treat alist as char-spec; don't
+	use `ds-set-list' for nil.
+
+2024-04-17  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp (association-list-p): New function.
 	(ds-rpush): New generic function for redis-ds.
 	(object's initialize-instance): Add `=_id' for the initialized
