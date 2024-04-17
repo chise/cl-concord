@@ -11,8 +11,11 @@
    :object-genre :object-id
    :object-put :object-get
    :define-object :object-spec
-   :metadata-feature-name-p :id-feature-name-p
-   :sequence-list-p))
+   :object-p
+   :metadata-feature-name-p
+   :id-feature-name-p :relation-feature-name-p
+   :make-reversed-relation-feature-name
+   :sequence-list-p :association-list-p))
 
 (in-package :concord)
 
@@ -21,6 +24,12 @@
 	((consp object)
 	 (sequence-list-p (cdr object)))))
 
+(defun association-list-p (object)
+  (cond ((null object))
+	((and (consp object)
+	      (consp (car object)))
+	 (association-list-p (cdr object)))))
+  
 (defvar *default-ds* nil "The default data-store of Concord.")
 
 (defclass data-store ()
@@ -105,6 +114,9 @@
 
 (defmethod ds-del ((ds redis-ds) key)
   (red:del key))
+
+(defmethod ds-rpush ((ds redis-ds) key value)
+  (red:rpush key value))
 
 (defmethod ds-set-list ((ds redis-ds) key value)
   (let (ret)
@@ -205,7 +217,11 @@
     (unless id
       (setq id (generate-object-id gobj)))
     (setf (object-id obj) id)
-    (genre-register-object gobj id obj)))
+    (genre-register-object gobj id obj)
+    (object-put obj '=_id id)))
+
+(defun object-p (obj)
+  (typep obj 'object))
 
 (defmethod print-object ((obj object) out)
   (format out "#.(concord:object :~a ~a)"
@@ -228,13 +244,37 @@
 		   (or (= pos 1)
 		       (and (= pos 2)
 			    (eql (elt feature-name 1) #\>))))))))
+
+(defun relation-feature-name-p (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (progn
+	 (if (symbolp feature-name)
+	     (setq feature-name (format nil "~a" feature-name)))
+	 (or (eql (search "<-" feature-name) 0)
+	     (eql (search "->" feature-name) 0)))))
+
+(defun make-reversed-relation-feature-name (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (progn
+	 (if (symbolp feature-name)
+	     (setq feature-name (format nil "~a" feature-name)))
+	 (cond ((eql (search "<-" feature-name) 0)
+		(read-from-string
+		 (format nil "->~a"
+			 (subseq feature-name 2)))
+		)
+	       ((eql (search "->" feature-name) 0)
+		(read-from-string
+		 (format nil "<-~a"
+			 (subseq feature-name 2)))
+		)))))
+
 (defun define-object (genre object-spec)
   (if (symbolp genre)
       (setq genre (genre (or genre 'default))))
   (let ((id (cdr (assoc '=_id object-spec)))
-	ret obj add-id-flag)
+	ret obj)
     (unless id
-      (setq add-id-flag t)
       (when (setq ret (assoc '=id object-spec))
 	(setq id (cdr ret))))
     (cond (id
@@ -252,12 +292,24 @@
 	   (setq obj (genre-make-object genre id))
 	   ))
     (when obj
-      (when add-id-flag
-	(object-put obj '=_id id))
       (dolist (feature-pair object-spec)
 	(object-put obj (car feature-pair)(cdr feature-pair))))
     obj))
 
+(defun normalize-object-representation (object-rep &key genre ds)
+  (cond
+    ((association-list-p object-rep)
+     (define-object genre object-rep)
+     )
+    ((and (consp object-rep)
+	  (symbolp (car object-rep))
+	  (association-list-p (cdr object-rep)))
+     (define-object (genre (car object-rep) :ds ds)
+	 (cdr object-rep))
+     )
+    (t
+     object-rep)))
+     
 (defmethod object-put ((obj object) feature value)
   (let* ((genre (object-genre obj))
 	 (ds (genre-ds genre))
@@ -265,7 +317,7 @@
 		      (genre-name genre)
 		      (object-id obj)
 		      feature))
-	 index)
+	 index rep-list rev-feature rev-key)
     (cond ((id-feature-name-p feature)
 	   (setq index (format nil "~a:idx:~a;~a"
 			       (genre-name genre) feature value))
@@ -273,8 +325,28 @@
 	     (when (ds-set-atom ds index obj)
 	       value))
 	   )
-	  ((and (consp value)
-		(sequence-list-p value))
+	  ((setq rev-feature (make-reversed-relation-feature-name feature))
+	   (setq rep-list (mapcar #'normalize-object-representation
+				  value))
+	   (ds-set-list ds key rep-list)
+	   (dolist (rev-item rep-list)
+	     (cond ((object-p rev-item)
+		    (setq rev-key (format nil "~a:obj:~a;~a"
+					  (genre-name (object-genre rev-item))
+					  (object-id rev-item)
+					  rev-feature))
+		    (unless (member obj (ds-get-list ds rev-key))
+		      (ds-rpush ds rev-key obj))
+		    )
+		   ((characterp rev-item)
+		    (setq rev-key (format nil "character:obj:~a;~a"
+					  (char-code rev-item)
+					  rev-feature))
+		    (unless (member obj (ds-get-list ds rev-key))
+		      (ds-rpush ds rev-key obj))
+		    )))
+	   )
+	  ((sequence-list-p value)
 	   (ds-set-list ds key value)
 	   )
 	  (t
