@@ -1,3 +1,17 @@
+2024-04-17  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (association-list-p): New function.
+	(ds-rpush): New generic function for redis-ds.
+	(object's initialize-instance): Add `=_id' for the initialized
+	object.
+	(object-p): New function.
+	(relation-feature-name-p): New function.
+	(make-reversed-relation-feature-name): New function.
+	(define-object): Delete code to add `=_id'.
+	(normalize-object-representation): New function.
+	(object-put): Support relation feature; add reversed features for
+	each target of relation feature.
+
 2024-04-16  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* README.md (Usage): New section.
