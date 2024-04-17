@@ -334,7 +334,6 @@
 	  ((setq rev-feature (make-reversed-relation-feature-name feature))
 	   (setq rep-list (mapcar #'normalize-object-representation
 				  value))
-	   (ds-set-list ds key rep-list)
 	   (dolist (rev-item rep-list)
 	     (cond ((object-p rev-item)
 		    (setq rev-key (format nil "~a:obj:~a;~a"
@@ -351,6 +350,7 @@
 		    (unless (member obj (ds-get-list ds rev-key))
 		      (ds-rpush ds rev-key obj))
 		    )))
+	   (ds-set-list ds key rep-list)
 	   )
 	  ((and value (sequence-list-p value))
 	   (ds-set-list ds key value)
