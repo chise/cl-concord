@@ -147,6 +147,26 @@
 		    (ds-get ds key)))
 	    (red:keys (format nil "~a*" pat)))))
 
+(defmethod ds-some-in-feature ((ds redis-ds) func genre-name feature-name)
+  (let ((pat (format nil "~a:obj:*;~a" genre-name feature-name)))
+    (some func (red:keys pat))))
+
+(defun some-in-feature (func feature-name &key genre ds)
+  (unless genre
+    (setq genre 'default))
+  (unless ds
+    (setq ds *default-ds*))
+  (let (pos end id obj)
+    (ds-some-in-feature
+     ds
+     (lambda (key)
+       (setq end (position #\; key :from-end t))
+       (setq pos (position #\: key :from-end t :end end))
+       (setq id (read-from-string (subseq key (1+ pos) end)))
+       (funcall func
+		(object genre id :ds ds)
+		(ds-get ds key)))
+     genre  feature-name)))
 
 (defclass genre ()
   ((name :accessor genre-name :initform 'default :initarg :name)
