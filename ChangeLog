@@ -1,3 +1,8 @@
+2024-04-18  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (ds-some-in-feature): New function.
+	(some-in-feature): New function.
+
 2024-04-17  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (object-put): Fix problem of return value for
