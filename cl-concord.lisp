@@ -12,6 +12,7 @@
    :object-put :object-get
    :define-object :object-spec
    :object-p
+   :some-in-feature
    :metadata-feature-name-p
    :id-feature-name-p :relation-feature-name-p
    :make-reversed-relation-feature-name
@@ -268,6 +269,13 @@
 		       (and (= pos 2)
 			    (eql (elt feature-name 1) #\>))))))))
 
+(defun structure-feature-name-p (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (progn
+	 (if (symbolp feature-name)
+	     (setq feature-name (format nil "~a" feature-name)))
+	 (eql (search "ideographic-structure" feature-name) 0))))
+
 (defun relation-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
        (progn
@@ -350,6 +358,11 @@
 	   (when (ds-set-atom ds key value)
 	     (when (ds-set-atom ds index obj)
 	       value))
+	   )
+	  ((structure-feature-name-p feature)
+	   (setq rep-list (mapcar #'normalize-object-representation
+				  value))
+	   (ds-set-list ds key rep-list)
 	   )
 	  ((setq rev-feature (make-reversed-relation-feature-name feature))
 	   (setq rep-list (mapcar #'normalize-object-representation
