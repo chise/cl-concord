@@ -333,7 +333,11 @@
 (defun normalize-object-representation (object-rep &key genre ds)
   (cond
     ((association-list-p object-rep)
-     (define-object 'character object-rep)
+     (let ((obj (define-object 'character object-rep)))
+       (if (and (integerp (object-id obj))
+		(< (object-id obj) #xF0000))
+	   (code-char (object-id obj))
+	   obj))
      )
     ((and (consp object-rep)
 	  (symbolp (car object-rep))
