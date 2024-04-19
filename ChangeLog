@@ -1,5 +1,12 @@
 2024-04-18  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp: Export `some-in-feature'.
+	(structure-feature-name-p): New function.
+	(object-put): Normalize each element of the specified value if the
+	specified feature is a structure-feature.
+
+2024-04-18  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp (ds-some-in-feature): New function.
 	(some-in-feature): New function.
 
