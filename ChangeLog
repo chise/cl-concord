@@ -1,3 +1,9 @@
+2024-04-19  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (normalize-object-representation): Return
+	character instead of concord:object when the object's genre is
+	character and its object-id < #xF0000.
+
 2024-04-18  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: Export `some-in-feature'.
