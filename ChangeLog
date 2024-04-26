@@ -1,5 +1,9 @@
 2024-04-26  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.asd (version): Update to "0.3".
+
+2024-04-26  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp: Fix problem when (readtable-case *readtable*)
 	is :UPCASE.
 	(ds-some-in-feature): Normalize `genre-name' to lower case in
