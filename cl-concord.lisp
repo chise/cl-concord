@@ -149,7 +149,7 @@
 	    (red:keys (format nil "~a*" pat)))))
 
 (defmethod ds-some-in-feature ((ds redis-ds) func genre-name feature-name)
-  (let ((pat (format nil "~a:obj:*;~a" genre-name feature-name)))
+  (let ((pat (format nil "~(~a~):obj:*;~a" genre-name feature-name)))
     (some func (red:keys pat))))
 
 (defun some-in-feature (func feature-name &key genre ds)
@@ -214,7 +214,7 @@
 	((symbolp genre)
 	 (setq genre (genre genre))
 	 ))
-  (let ((index (format nil "~a:idx:~a;~(~a~)"
+  (let ((index (format nil "~(~a~):idx:~a;~(~a~)"
 		       (genre-name genre) id-feature id)))
     (ds-get-atom (genre-ds genre) index)))
   
@@ -248,7 +248,7 @@
   (typep obj 'object))
 
 (defmethod print-object ((obj object) out)
-  (format out "#.(concord:object :~a ~a)"
+  (format out "#.(concord:object :~(~a~) ~a)"
 	  (genre-name (object-genre obj))
 	  (object-id obj)))
 
