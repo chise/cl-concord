@@ -157,7 +157,7 @@
     (setq genre 'default))
   (unless ds
     (setq ds *default-ds*))
-  (let (pos end id obj)
+  (let (pos end id)
     (ds-some-in-feature
      ds
      (lambda (key)
@@ -333,12 +333,21 @@
 
 (defun normalize-object-representation (object-rep &key genre ds)
   (cond
+    ((symbolp object-rep)
+     (let ((name (format nil "~a" object-rep)))
+       (if (and (eql (aref name 0) #\?)
+		(= (length name) 2))
+	   (aref name 1)
+	   object-rep))
+     )
     ((association-list-p object-rep)
-     (let ((obj (define-object 'character object-rep)))
-       (if (and (integerp (object-id obj))
-		(< (object-id obj) #xF0000))
-	   (code-char (object-id obj))
-	   obj))
+     (if genre
+	 (define-object genre object-rep)
+	 (let ((obj (define-object 'character object-rep)))
+	   (if (and (integerp (object-id obj))
+		    (< (object-id obj) #xF0000))
+	       (code-char (object-id obj))
+	       obj)))
      )
     ((and (consp object-rep)
 	  (symbolp (car object-rep))
