@@ -309,9 +309,10 @@
     (unless id
       (when (setq ret (assoc '=id object-spec))
 	(setq id (cdr ret))))
+    (unless id
+      (when (eq genre 'character)
+	(setq id (cdr (assoc '=ucs object-spec)))))
     (cond (id
-	   ;; (format t "Defining ~s: id=~x~%"
-	   ;;    (genre-name genre) id)
 	   (setq obj (genre-make-object genre id))
 	   )
 	  ((find-if (lambda (feature-pair)
