@@ -1,5 +1,14 @@
 2024-04-26  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp: Fix problem when (readtable-case *readtable*)
+	is :UPCASE.
+	(ds-some-in-feature): Normalize `genre-name' to lower case in
+	Redis keys.
+	(decode-object): Likewise.
+	(print-object): Normalize `genre-name' to lower case.
+
+2024-04-26  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp (normalize-object-representation):
 	- Treat symbol ?<char> [character form of Emacs Lisp] as character.
 	- If keyword argument `genre' is specified, treat association-list
