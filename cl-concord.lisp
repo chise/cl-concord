@@ -140,7 +140,7 @@
 	 )))
 
 (defmethod ds-get-object-spec ((ds redis-ds) genre-name id)
-  (let ((pat (format nil "~a:obj:~a;" genre-name id))
+  (let ((pat (format nil "~(~a~):obj:~a;" genre-name id))
 	len)
     (setq len (length pat))
     (mapcar (lambda (key)
