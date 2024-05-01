@@ -1,3 +1,8 @@
+2024-04-28  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (ds-get-object-spec): Fix problem when
+	readtable-case of *readtable* is :UPCASE.
+
 2024-04-26  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "0.3".
