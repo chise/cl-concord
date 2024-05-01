@@ -1,5 +1,10 @@
 2024-05-01  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* README.md (Installation): New section.
+	(Usage): Add examples of `concord:some-in-feature'.
+
+2024-05-01  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.asd (version): Update to "0.4".
 
 2024-04-28  MORIOKA Tomohiko  <tomo.git@chise.org>
