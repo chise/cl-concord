@@ -38,22 +38,6 @@ NIL
 * (ql:quickload :cl-concord)
 ```
 
-When cl-chise is loaded for the first time, the CHISE character
-ontology is installed (so it takes a while to start). From next time
-onwards, it will start immediately to use the character ontology
-installed in Redis or Valkey database number 3.
-
-If you want to clear the installed character ontology:
-```
-% redis-cli
-
-> select 3
-OK
-
-> flushdb
-OK
-```
-
 
 ## Usage
 
