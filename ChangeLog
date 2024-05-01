@@ -1,5 +1,9 @@
 2024-05-01  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* README.md (Installation): Add description about database number.
+
+2024-05-01  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* README.md (Installation): New section.
 	(Usage): Add examples of `concord:some-in-feature'.
 
