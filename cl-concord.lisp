@@ -276,6 +276,13 @@
 	     (setq feature-name (format nil "~a" feature-name)))
 	 (eql (search "ideographic-structure" feature-name) 0))))
 
+(defun decomposition-feature-name-p (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (progn
+	 (if (symbolp feature-name)
+	     (setq feature-name (format nil "~a" feature-name)))
+	 (eql (search "=decomposition" feature-name) 0))))
+
 (defun relation-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
        (progn
@@ -310,8 +317,11 @@
       (when (setq ret (assoc '=id object-spec))
 	(setq id (cdr ret))))
     (unless id
-      (when (eq genre 'character)
-	(setq id (cdr (assoc '=ucs object-spec)))))
+      (when (eql (genre-name genre) 'character)
+	(setq id (cdr (assoc '=ucs object-spec)))
+	;; (format t "~s ~s ~s ~x~%" (genre-name genre) object-spec (assoc '=ucs object-spec) id)
+	))
+    ;; (format t "genre = ~a, id = ~x~%" genre id)
     (cond (id
 	   (setq obj (genre-make-object genre id))
 	   )
@@ -343,7 +353,10 @@
     ((association-list-p object-rep)
      (if genre
 	 (define-object genre object-rep)
-	 (let ((obj (define-object 'character object-rep)))
+	 (let* ((ucs (cdr (or (assoc '|=ucs| object-rep)
+			      (assoc '|=UCS| object-rep))))
+		(obj (define-object 'character object-rep :id ucs)))
+	   ;; (format t "~s ~s ~x~%" object-rep (assoc '=ucs object-rep) ucs)
 	   (if (and (integerp (object-id obj))
 		    (< (object-id obj) #xF0000))
 	       (code-char (object-id obj))
@@ -372,6 +385,11 @@
 	   (when (ds-set-atom ds key value)
 	     (when (ds-set-atom ds index obj)
 	       value))
+	   )
+	  ((decomposition-feature-name-p feature)
+	   (setq rep-list (mapcar #'normalize-object-representation
+				  value))
+	   (ds-set-list ds key rep-list)
 	   )
 	  ((structure-feature-name-p feature)
 	   (setq rep-list (mapcar #'normalize-object-representation
