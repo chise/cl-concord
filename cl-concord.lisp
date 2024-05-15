@@ -14,9 +14,12 @@
    :object-p
    :some-in-feature
    :metadata-feature-name-p
-   :id-feature-name-p :relation-feature-name-p
+   :id-feature-name-p :decomposition-feature-name-p
+   :structure-feature-name-p
+   :relation-feature-name-p
    :make-reversed-relation-feature-name
-   :sequence-list-p :association-list-p))
+   :sequence-list-p :association-list-p
+   :=ucs))
 
 (in-package :concord)
 
@@ -318,10 +321,7 @@
 	(setq id (cdr ret))))
     (unless id
       (when (eql (genre-name genre) 'character)
-	(setq id (cdr (assoc '=ucs object-spec)))
-	;; (format t "~s ~s ~s ~x~%" (genre-name genre) object-spec (assoc '=ucs object-spec) id)
-	))
-    ;; (format t "genre = ~a, id = ~x~%" genre id)
+	(setq id (cdr (assoc '=ucs object-spec)))))
     (cond (id
 	   (setq obj (genre-make-object genre id))
 	   )
@@ -353,10 +353,8 @@
     ((association-list-p object-rep)
      (if genre
 	 (define-object genre object-rep)
-	 (let* ((ucs (cdr (or (assoc '|=ucs| object-rep)
-			      (assoc '|=UCS| object-rep))))
+	 (let* ((ucs (cdr (assoc '=ucs object-rep)))
 		(obj (define-object 'character object-rep :id ucs)))
-	   ;; (format t "~s ~s ~x~%" object-rep (assoc '=ucs object-rep) ucs)
 	   (if (and (integerp (object-id obj))
 		    (< (object-id obj) #xF0000))
 	       (code-char (object-id obj))
