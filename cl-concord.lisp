@@ -10,6 +10,7 @@
    :object :decode-object
    :object-genre :object-id
    :object-put :object-get
+   :object-adjoin
    :define-object :object-spec
    :object-p
    :some-in-feature
@@ -134,9 +135,27 @@
 (defmethod ds-get-list ((ds redis-ds) key)
   (mapcar #'read-from-string (red:lrange key 0 -1)))
 
+(defmethod ds-adjoin ((ds redis-ds) key value)
+  (red:sadd key value))
+
+(defmethod ds-set-members ((ds redis-ds) key value)
+  (let (ret)
+    (red:del key)
+    (when (integerp (setq ret (apply #'red:sadd key
+				     (mapcar (lambda (unit)
+					       (format nil "~S" unit))
+					     value))))
+      (values value ret))))
+
+(defmethod ds-get-members ((ds redis-ds) key)
+  (mapcar #'read-from-string (red:smembers key)))
+
 (defmethod ds-get ((ds redis-ds) key &optional default-value)
   (cond ((string= (red:type key) "list")
 	 (ds-get-list ds key)
+	 )
+	((string= (red:type key) "set")
+	 (ds-get-members ds key)
 	 )
 	(t
 	 (ds-get-atom ds key default-value)
@@ -286,6 +305,13 @@
 	     (setq feature-name (format nil "~a" feature-name)))
 	 (eql (search "=decomposition" feature-name) 0))))
 
+(defun products-feature-name-p (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (progn
+	 (if (symbolp feature-name)
+	     (setq feature-name (format nil "~a" feature-name)))
+	 (eql (search "ideographic-products" feature-name) 0))))
+
 (defun relation-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
        (progn
@@ -394,6 +420,11 @@
 				  value))
 	   (ds-set-list ds key rep-list)
 	   )
+	  ((products-feature-name-p feature)
+	   (setq rep-list (mapcar #'normalize-object-representation
+				  value))
+	   (ds-set-members ds key rep-list)
+	   )
 	  ((setq rev-feature (make-reversed-relation-feature-name feature))
 	   (setq rep-list (mapcar #'normalize-object-representation
 				  value))
@@ -422,6 +453,19 @@
 	   (ds-set-atom ds key value)
 	   ))))
 
+(defmethod object-adjoin ((obj object) feature item)
+  (if (products-feature-name-p feature)
+      (let* ((genre (object-genre obj))
+	     (ds (genre-ds genre))
+	     (key (format nil "~a:obj:~a;~a"
+			  (genre-name genre)
+			  (object-id obj)
+			  feature)))
+	(ds-adjoin ds key (normalize-object-representation item)))
+      (let ((ret (object-get obj feature)))
+	(unless (member obj ret)
+	  (object-put obj feature (cons obj ret))))))
+
 (defmethod object-get ((obj object) feature &optional default-value)
   (let* ((genre (object-genre obj))
 	 (key (format nil "~a:obj:~a;~a"
@@ -430,6 +474,9 @@
 		      feature)))
     (cond ((string= (red:type key) "list")
 	   (ds-get-list (genre-ds genre) key)
+	   )
+	  ((string= (red:type key) "set")
+	   (ds-get-members (genre-ds genre) key)
 	   )
 	  (t
 	   (ds-get-atom (genre-ds genre) key default-value)
