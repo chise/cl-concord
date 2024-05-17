@@ -1,3 +1,15 @@
+2024-05-17  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp: Export `object-adjoin'.
+	(ds-adjoin): New method of `redis-ds'.
+	(ds-set-members): Likewise.
+	(ds-get-members): Likewise.
+	(ds-get): Use `ds-get-members' for set.
+	(products-feature-name-p): New function.
+	(object-put): Use `ds-set-members' for products-features.
+	(object-adjoin): New generic function.
+	(object-get): Use `ds-get-members' for set.
+
 2024-05-15  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: Export `decomposition-feature-name-p',
