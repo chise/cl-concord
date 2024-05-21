@@ -1,3 +1,7 @@
+2024-05-18  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (version): Update to "0.5".
+
 2024-05-17  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: Export `object-adjoin'.
