@@ -466,12 +466,15 @@
 	(unless (member obj ret)
 	  (object-put obj feature (cons obj ret))))))
 
-(defmethod object-get ((obj object) feature &optional default-value)
+(defmethod object-get ((obj object) feature &optional default-value
+		       &key (recursive nil))
   (let* ((genre (object-genre obj))
 	 (key (format nil "~a:obj:~a;~a"
 		      (genre-name genre)
 		      (object-id obj)
-		      feature)))
+		      feature))
+	 (unbound (gensym))
+	 ret)
     (cond ((string= (red:type key) "list")
 	   (ds-get-list (genre-ds genre) key)
 	   )
@@ -479,8 +482,21 @@
 	   (ds-get-members (genre-ds genre) key)
 	   )
 	  (t
-	   (ds-get-atom (genre-ds genre) key default-value)
-	   ))))
+	   (setq ret (ds-get-atom (genre-ds genre) key unbound))
+	   (if (eq ret unbound)
+	       (or (if recursive
+		       (or (dolist (parent (object-get obj "<-subsumptive"))
+			     (setq ret (object-get parent feature
+						   unbound :recursive t))
+			     (unless (eq ret unbound)
+			       (return ret)))
+			   (dolist (parent (object-get obj "<-denotational"))
+			     (setq ret (object-get parent feature
+						   unbound :recursive t))
+			     (unless (eq ret unbound)
+			       (return ret)))))
+		   default-value)
+	       ret)))))
 
 (defmethod object-spec ((obj object))
   (let* ((genre (object-genre obj))
