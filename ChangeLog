@@ -1,3 +1,10 @@
+2024-06-11  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp: Export `find-object' and `while'.
+	(while): New macro.
+	(find-object): New function.
+	(define-object): Use `find-object'.
+
 2024-06-04  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "0.6".
