@@ -11,7 +11,7 @@
    :object-genre :object-id
    :object-put :object-get
    :object-adjoin
-   :define-object :object-spec
+   :define-object :find-object :object-spec
    :object-p
    :some-in-feature
    :metadata-feature-name-p
@@ -20,9 +20,13 @@
    :relation-feature-name-p
    :make-reversed-relation-feature-name
    :sequence-list-p :association-list-p
+   :while
    :=ucs))
 
 (in-package :concord)
+
+(defmacro while (test &body body)
+  `(loop while ,test do ,@body))
 
 (defun sequence-list-p (object)
   (cond ((null object))
@@ -336,6 +340,16 @@
 			 (subseq feature-name 2)))
 		)))))
 
+(defun find-object (genre object-spec)
+  (let (ret)
+    (if (find-if (lambda (feature-pair)
+		   (and (id-feature-name-p (car feature-pair))
+			(setq ret (decode-object (car feature-pair)
+						 (cdr feature-pair)
+						 :genre genre))))
+		 object-spec)
+	ret)))
+
 (defun define-object (genre object-spec &key id)
   (if (symbolp genre)
       (setq genre (genre (or genre 'default))))
@@ -351,13 +365,7 @@
     (cond (id
 	   (setq obj (genre-make-object genre id))
 	   )
-	  ((find-if (lambda (feature-pair)
-		      (and (id-feature-name-p (car feature-pair))
-			   (setq ret (decode-object (car feature-pair)
-						    (cdr feature-pair)
-						    :genre genre))))
-		    object-spec)
-	   (setq obj ret)
+	  ((setq obj (find-object genre object-spec))
 	   )
 	  ((setq id (generate-object-id genre))
 	   (setq obj (genre-make-object genre id))
