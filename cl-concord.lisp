@@ -145,11 +145,16 @@
 (defmethod ds-set-members ((ds redis-ds) key value)
   (let (ret)
     (red:del key)
-    (when (integerp (setq ret (apply #'red:sadd key
-				     (mapcar (lambda (unit)
-					       (format nil "~S" unit))
-					     value))))
-      (values value ret))))
+    (cond ((null value)
+	   (ds-set-atom ds key value)
+	   )
+	  (t
+	   (when (integerp (setq ret (apply #'red:sadd key
+					    (mapcar (lambda (unit)
+						      (format nil "~S" unit))
+						    value))))
+	     (values value ret))
+	   ))))
 
 (defmethod ds-get-members ((ds redis-ds) key)
   (mapcar #'read-from-string (red:smembers key)))
@@ -505,6 +510,12 @@
 			       (return ret)))))
 		   default-value)
 	       ret)))))
+
+(defmethod object-get ((obj character) feature &optional default-value
+		       &key (recursive nil))
+  (object-get (concord:object :character (char-code obj))
+	      feature default-value
+	      :recursive recursive))
 
 (defmethod object-spec ((obj object))
   (let* ((genre (object-genre obj))
