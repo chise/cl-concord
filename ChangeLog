@@ -1,5 +1,10 @@
 2024-06-19  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp (ds-adjoin): Fix problem when the previous value
+	is nil.
+
+2024-06-19  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp (expand-feature-name): New function.
 	- Export `expand-feature-name'.
 
