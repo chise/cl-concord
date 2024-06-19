@@ -19,6 +19,7 @@
    :structure-feature-name-p
    :relation-feature-name-p
    :make-reversed-relation-feature-name
+   :expand-feature-name
    :sequence-list-p :association-list-p
    :while
    :=ucs))
@@ -344,6 +345,11 @@
 		 (format nil "<-~a"
 			 (subseq feature-name 2)))
 		)))))
+
+(defun expand-feature-name (feature domain)
+  (if domain
+      (format nil "~a@~a" feature domain)
+    feature))
 
 (defun find-object (genre object-spec)
   (let (ret)
