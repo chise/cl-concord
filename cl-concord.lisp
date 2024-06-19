@@ -141,6 +141,8 @@
   (mapcar #'read-from-string (red:lrange key 0 -1)))
 
 (defmethod ds-adjoin ((ds redis-ds) key value)
+  (unless (string= (red:type key) "set")
+    (red:del key))
   (red:sadd key value))
 
 (defmethod ds-set-members ((ds redis-ds) key value)
