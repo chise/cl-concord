@@ -1,3 +1,8 @@
+2024-06-19  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (expand-feature-name): New function.
+	- Export `expand-feature-name'.
+
 2024-06-18  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (ds-set-members): Accept nil value.
