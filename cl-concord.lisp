@@ -13,7 +13,7 @@
    :object-adjoin
    :define-object :find-object :object-spec
    :object-p
-   :some-in-feature
+   :some-in-feature :intersection-in-feature
    :metadata-feature-name-p
    :id-feature-name-p :decomposition-feature-name-p
    :structure-feature-name-p
@@ -162,6 +162,9 @@
 (defmethod ds-get-members ((ds redis-ds) key)
   (mapcar #'read-from-string (red:smembers key)))
 
+(defmethod ds-intersection ((ds redis-ds) &rest keys)
+  (mapcar #'read-from-string (apply #'red:sinter keys)))
+
 (defmethod ds-get ((ds redis-ds) key &optional default-value)
   (cond ((string= (red:type key) "list")
 	 (ds-get-list ds key)
@@ -202,6 +205,23 @@
 		(object genre id :ds ds)
 		(ds-get ds key)))
      genre  feature-name)))
+
+(defun intersection-in-feature (feature-name &rest objects)
+  (let (genre ds)
+    (when (and (object-p (car objects))
+	       (setq genre (object-genre (car objects)))
+	       (setq ds (genre-ds genre)))
+      (apply #'ds-intersection
+	     ds (mapcar (lambda (obj)
+			  (format t "~a:obj:~a;~a~%"
+				  (genre-name genre)
+				  (object-id obj)
+				  feature-name)
+			  (format nil "~a:obj:~a;~a"
+				  (genre-name genre)
+				  (object-id obj)
+				  feature-name))
+			objects)))))
 
 (defclass genre ()
   ((name :accessor genre-name :initform 'default :initarg :name)
