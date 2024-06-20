@@ -1,3 +1,10 @@
+2024-06-20  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp:
+	- Export `intersection-in-feature'.
+	(ds-intersection): New function.
+	(intersection-in-feature): New function.
+
 2024-06-19  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (ds-adjoin): Fix problem when the previous value
