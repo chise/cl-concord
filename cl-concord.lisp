@@ -213,10 +213,6 @@
 	       (setq ds (genre-ds genre)))
       (apply #'ds-intersection
 	     ds (mapcar (lambda (obj)
-			  (format t "~a:obj:~a;~a~%"
-				  (genre-name genre)
-				  (object-id obj)
-				  feature-name)
 			  (format nil "~a:obj:~a;~a"
 				  (genre-name genre)
 				  (object-id obj)
