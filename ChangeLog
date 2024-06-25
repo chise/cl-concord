@@ -1,3 +1,10 @@
+2024-06-25  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp:
+	- Export `default-ds' and `store-union-in-feature'.
+	(ds-store-union): New function.
+	(store-union-in-feature): New generic function.
+
 2024-06-24  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (normalize-object-representation): Fix problem
