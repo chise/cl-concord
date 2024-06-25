@@ -5,6 +5,7 @@
 (defpackage :concord
   (:use :cl)
   (:export
+   :default-ds
    :genre
    :genre-name :genre-ds
    :object :decode-object
@@ -14,6 +15,7 @@
    :define-object :find-object :object-spec
    :object-p
    :some-in-feature :intersection-in-feature
+   :store-union-in-feature
    :metadata-feature-name-p
    :id-feature-name-p :decomposition-feature-name-p
    :structure-feature-name-p
@@ -164,6 +166,9 @@
 
 (defmethod ds-intersection ((ds redis-ds) &rest keys)
   (mapcar #'read-from-string (apply #'red:sinter keys)))
+
+(defmethod ds-store-union ((ds redis-ds) dest-key &rest keys)
+  (apply #'red:sunionstore dest-key keys))
 
 (defmethod ds-get ((ds redis-ds) key &optional default-value)
   (cond ((string= (red:type key) "list")
@@ -520,6 +525,25 @@
       (let ((ret (object-get obj feature)))
 	(unless (member obj ret)
 	  (object-put obj feature (cons obj ret))))))
+
+(defmethod store-union-in-feature (feature-name (dest-obj object) &rest objects)
+  (let (genre ds)
+    (setq genre (object-genre dest-obj)
+	  ds (genre-ds genre))
+    (apply #'ds-store-union
+	   ds
+ 	   (format nil "~a:obj:~a;~a"
+		   (genre-name genre)
+		   (object-id dest-obj)
+		   feature-name)
+	   (mapcar (lambda (obj)
+		     (format nil "~a:obj:~a;~a"
+			     (genre-name genre)
+			     (if (characterp obj)
+				 (char-code obj)
+				 (object-id obj))
+			     feature-name))
+		   objects))))
 
 (defmethod object-get ((obj object) feature &optional default-value
 		       &key (recursive nil))
