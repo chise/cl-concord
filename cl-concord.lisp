@@ -374,6 +374,12 @@
       (format nil "~a@~a" feature domain)
     feature))
 
+(defun feature (feature-name &key ds)
+  (object genre-name feature-name :ds ds))
+
+(defun find-feature (feature-name)
+  (decode-object "=_id" feature-name :genre 'feature))
+
 (defun find-object (genre object-spec)
   (let (ret)
     (if (find-if (lambda (feature-pair)
