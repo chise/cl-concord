@@ -8,6 +8,7 @@
    :default-ds
    :genre
    :genre-name :genre-ds
+   :feature :find-feature
    :object :decode-object
    :object-genre :object-id
    :object-put :object-get
@@ -166,6 +167,9 @@
 
 (defmethod ds-intersection ((ds redis-ds) &rest keys)
   (mapcar #'read-from-string (apply #'red:sinter keys)))
+
+(defmethod ds-union ((ds redis-ds) &rest keys)
+  (mapcar #'read-from-string (apply #'red:sunion keys)))
 
 (defmethod ds-store-union ((ds redis-ds) dest-key &rest keys)
   (apply #'red:sunionstore dest-key keys))
@@ -375,10 +379,10 @@
     feature))
 
 (defun feature (feature-name &key ds)
-  (object genre-name feature-name :ds ds))
+  (object :feature feature-name :ds ds))
 
 (defun find-feature (feature-name)
-  (decode-object "=_id" feature-name :genre 'feature))
+  (genre-find-object (genre :feature) feature-name))
 
 (defun find-object (genre object-spec)
   (let (ret)
