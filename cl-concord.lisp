@@ -15,7 +15,7 @@
    :object-adjoin
    :define-object :find-object :object-spec
    :object-p
-   :some-in-feature :intersection-in-feature
+   :some-in-feature :intersection-in-feature :union-in-feature
    :store-union-in-feature
    :metadata-feature-name-p
    :id-feature-name-p :decomposition-feature-name-p
@@ -221,6 +221,19 @@
 	       (setq genre (object-genre (car objects)))
 	       (setq ds (genre-ds genre)))
       (apply #'ds-intersection
+	     ds (mapcar (lambda (obj)
+			  (format nil "~a:obj:~a;~a"
+				  (genre-name genre)
+				  (object-id obj)
+				  feature-name))
+			objects)))))
+
+(defun union-in-feature (feature-name &rest objects)
+  (let (genre ds)
+    (when (and (object-p (car objects))
+	       (setq genre (object-genre (car objects)))
+	       (setq ds (genre-ds genre)))
+      (apply #'ds-union
 	     ds (mapcar (lambda (obj)
 			  (format nil "~a:obj:~a;~a"
 				  (genre-name genre)
