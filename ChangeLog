@@ -1,5 +1,10 @@
 2024-07-06  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp (union-in-feature): New function.
+	- Export `union-in-feature'.
+
+2024-07-06  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp:
 	- Export `feature' and `find-feature'.
 	(ds-union): New method for `redis-ds' class.
