@@ -1,3 +1,7 @@
+2024-07-16  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (version): Update to "0.9".
+
 2024-07-06  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (union-in-feature): New function.
