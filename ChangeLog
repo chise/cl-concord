@@ -1,5 +1,13 @@
 2024-07-16  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.lisp:
+	- Export `=id'.
+	(print-object): Fix problem when an object ID is a symbol.
+	(normalize-object-representation): Fix problem when an object-rep
+	uses object-ref [(:<genre> <obj-spec>)] format.
+
+2024-07-16  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.asd (version): Update to "0.9".
 
 2024-07-06  MORIOKA Tomohiko  <tomo.git@chise.org>
