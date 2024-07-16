@@ -25,7 +25,7 @@
    :expand-feature-name
    :sequence-list-p :association-list-p
    :while
-   :=ucs))
+   :=id :=ucs))
 
 (in-package :concord)
 
@@ -322,7 +322,10 @@
 (defmethod print-object ((obj object) out)
   (format out "#.(concord:object :~(~a~) ~a)"
 	  (genre-name (object-genre obj))
-	  (object-id obj)))
+	  (let ((id (object-id obj)))
+	    (if (symbolp id)
+		(format nil "'~a" id)
+		id))))
 
 (defun metadata-feature-name-p (feature-name)
   (if (symbolp feature-name)
@@ -471,9 +474,9 @@
      )
     ((and (consp object-rep)
 	  (symbolp (car object-rep))
-	  (association-list-p (cdr object-rep)))
+	  (association-list-p (nth 1 object-rep)))
      (define-object (genre (car object-rep) :ds ds)
-	 (cdr object-rep))
+	 (nth 1 object-rep))
      )
     (t
      object-rep)))
