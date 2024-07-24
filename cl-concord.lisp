@@ -25,7 +25,7 @@
    :expand-feature-name
    :sequence-list-p :association-list-p
    :while
-   :=id :=ucs))
+   :=id :=_id :=ucs))
 
 (in-package :concord)
 
@@ -184,6 +184,19 @@
 	(t
 	 (ds-get-atom ds key default-value)
 	 )))
+
+(defmethod ds-get-object-feature-names ((ds redis-ds) genre-name id
+					&key (require-system-features nil))
+  (let ((pat (format nil "~(~a~):obj:~a;" genre-name id))
+	len fname dest)
+    (setq len (length pat))
+    (dolist (key (red:keys (format nil "~a*" pat)))
+      (setq fname (subseq key len))
+      (when (or require-system-features
+		(and (not (eq (search "$_" fname) 0))
+		     (not (eq (search "=_" fname) 0))))
+	(setq dest (cons fname dest))))
+    dest))
 
 (defmethod ds-get-object-spec ((ds redis-ds) genre-name id)
   (let ((pat (format nil "~(~a~):obj:~a;" genre-name id))
@@ -609,7 +622,16 @@
 	      feature default-value
 	      :recursive recursive))
 
-(defmethod object-spec ((obj object))
+(defmethod object-spec ((obj object) &key (require-system-features nil))
   (let* ((genre (object-genre obj))
-	 (ds (genre-ds genre)))
-    (ds-get-object-spec ds (genre-name genre) (object-id obj))))
+	 (ds (genre-ds genre))
+	 dest)
+    (dolist (fname (ds-get-object-feature-names
+		    ds (genre-name genre) (object-id obj)
+		    :require-system-features require-system-features))
+      (when (or require-system-features
+		(not (member fname '("ideographic-products") :test #'equal)))
+	(setq dest (cons (cons (read-from-string fname)
+			       (concord:object-get obj fname))
+			 dest))))
+    dest))
