@@ -1,3 +1,12 @@
+2024-07-30  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (*ideographic-structure-feature-hash*): New
+	variable.
+	(some-in-feature): Use `*ideographic-structure-feature-hash*' for
+	`ideographic-structure' feature.
+	(object-put): Likewise.
+	(object-get): Likewise.
+
 2024-07-24  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp:
