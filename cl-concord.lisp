@@ -211,22 +211,46 @@
   (let ((pat (format nil "~(~a~):obj:*;~a" genre-name feature-name)))
     (some func (red:keys pat))))
 
+(defvar *ideographic-structure-feature-hash*
+  (make-hash-table :test 'equal))
+
 (defun some-in-feature (func feature-name &key genre ds)
   (unless genre
     (setq genre 'default))
   (unless ds
     (setq ds *default-ds*))
-  (let (pos end id)
-    (ds-some-in-feature
-     ds
-     (lambda (key)
-       (setq end (position #\; key :from-end t))
-       (setq pos (position #\: key :from-end t :end end))
-       (setq id (read-from-string (subseq key (1+ pos) end)))
-       (funcall func
-		(object genre id :ds ds)
-		(ds-get ds key)))
-     genre  feature-name)))
+  (let (pos end id obj ret)
+    (cond
+      ((or (eq feature-name 'ideographic-structure)
+	   (equal feature-name "ideographic-structure"))
+       (ds-some-in-feature
+	ds
+	(lambda (key)
+	  (setq end (position #\; key :from-end t))
+	  (setq pos (position #\: key :from-end t :end end))
+	  (setq id (read-from-string (subseq key (1+ pos) end)))
+	  (setq obj (object genre id :ds ds))
+	  (setq ret (gethash
+		     obj
+		     *ideographic-structure-feature-hash*
+		     'unload))
+	  (if (eq ret 'unload)
+	      (setq ret (ds-get ds key)))
+	  (funcall func obj ret))
+	genre  feature-name)
+       )
+      (t
+       (ds-some-in-feature
+	ds
+	(lambda (key)
+	  (setq end (position #\; key :from-end t))
+	  (setq pos (position #\: key :from-end t :end end))
+	  (setq id (read-from-string (subseq key (1+ pos) end)))
+	  (funcall func
+		   (object genre id :ds ds)
+		   (ds-get ds key)))
+	genre  feature-name)
+       ))))
 
 (defun intersection-in-feature (feature-name &rest objects)
   (let (genre ds)
@@ -517,6 +541,10 @@
 	  ((structure-feature-name-p feature)
 	   (setq rep-list (mapcar #'normalize-object-representation
 				  value))
+	   (if (or (eq feature 'ideographic-structure)
+		   (equal feature "ideographic-structure"))
+	       (setf (gethash obj *ideographic-structure-feature-hash*)
+		     rep-list))
 	   (ds-set-list ds key rep-list)
 	   )
 	  ((products-feature-name-p feature)
@@ -593,7 +621,25 @@
 		      feature))
 	 (unbound (gensym))
 	 ret)
-    (cond ((string= (red:type key) "list")
+    (cond ((or (eq feature 'ideographic-structure)
+	       (equal feature "ideographic-structure"))
+	   (setq ret (gethash
+		      obj
+		      *ideographic-structure-feature-hash*
+		      'unload))
+	   (cond
+	     ((eq ret 'unload)
+	      (setq ret
+		    (if (string= (red:type key) "list")
+			(ds-get-list (genre-ds genre) key)
+			(ds-get-atom (genre-ds genre) key)))
+	      (setf (gethash obj *ideographic-structure-feature-hash*)
+		    ret)
+	      ret)
+	     (t
+	      ret))
+	   )
+	  ((string= (red:type key) "list")
 	   (ds-get-list (genre-ds genre) key)
 	   )
 	  ((string= (red:type key) "set")
