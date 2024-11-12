@@ -14,6 +14,7 @@
    :object-put :object-get
    :object-adjoin
    :define-object :find-object :object-spec
+   :object-spec-to-id-spec
    :object-p
    :some-in-feature :intersection-in-feature :union-in-feature
    :store-union-in-feature
@@ -25,12 +26,75 @@
    :expand-feature-name
    :sequence-list-p :association-list-p
    :while
-   :=id :=_id :=ucs))
+   :ipfs-dag-put
+   :*use-ipld-based-object-id*
+   :=id :=_id :=ucs :=>ucs))
 
 (in-package :concord)
 
+(defvar *use-ipld-based-object-id* nil)
+
+(defvar *ipfs-command-path* "/opt/homebrew/bin/ipfs")
+
 (defmacro while (test &body body)
   `(loop while ,test do ,@body))
+
+(defun json-encode-vector-with-sort (vec)
+  (let ((len (length vec))
+	item dest)
+    (cond
+      ((> len 0)
+       (setq item (aref vec 0))
+       (cond
+	 ((numberp item)
+	  (setq vec (sort vec #'<))
+	  )
+	 ((stringp item)
+	  (setq vec (sort vec #'string<))
+	  ))
+       (setq dest
+	     (apply #'concatenate
+		    'string
+		    (map 'list
+			 (lambda (cell)
+			   (if (symbolp cell)
+			       (format nil ",\"~a\"" cell)
+			       (format nil ",~S" cell)))
+			 vec)))
+       (setf (aref dest 0) #\[)
+       (concatenate 'string dest "]")
+       ))))
+
+(defun json-encode-bare-ccs-spec (spec)
+  (let (dest)
+    (setq dest
+	  (apply #'concatenate
+		 'string
+		 (mapcar (lambda (pair)
+			   (format
+			    nil
+			    ",\"~a\":~a"
+			    (car pair)
+			    (json-encode-vector-with-sort (cdr pair))))
+			 spec)))
+    (setf (aref dest 0) #\{)
+    (concatenate 'string dest "}")))
+       
+(defun ipfs-dag-put (data &key pin json-input)
+  (let ((cid-s (make-string-output-stream)))
+    (with-input-from-string (in
+ 			     (if json-input
+				 data
+				 (let ((s (make-string-output-stream)))
+				   (encode-json data s)
+				   (get-output-stream-string s))))
+      (sb-ext:run-program
+       *ipfs-command-path*
+       (if pin
+	   '("dag" "put" "--pin")
+	   '("dag" "put"))
+       :input in :output cid-s)
+      (read-from-string (get-output-stream-string cid-s)))))
 
 (defun sequence-list-p (object)
   (cond ((null object))
@@ -426,6 +490,33 @@
 			 (subseq feature-name 2)))
 		)))))
 
+(defun split-ccs-feature-name (feature-name)
+  (if (eq feature-name '=ucs)
+      (values "ucs" 'abstract-character 10)
+      (let ((name (format nil "~a" feature-name)))
+	(cond
+	  ((eql (search "==>" name) 0)
+	   (values (subseq name 3) 'super-abstract-character 0)
+	   )
+	  ((eql (search "=+>" name) 0)
+	   (values (subseq name 3) 'unified-glyph 15)
+	   )
+	  ((eql (search "=>>" name) 0)
+	   (values (subseq name 3) 'detailed-glyph 24)
+	   )
+	  ((eql (search "===" name) 0)
+	   (values (subseq name 3) 'glyph-image 40)
+	   )
+	  ((eql (search "=>" name) 0)
+	   (values (subseq name 2) 'abstract-character 10)
+	   )
+	  ((eql (search "==" name) 0)
+	   (values (subseq name 2) 'abstract-glyph-form 30)
+	   )
+	  ((eql (search "=" name) 0)
+	   (values (subseq name 1) 'abstract-glyph 20)
+	   )))))
+
 (defun expand-feature-name (feature domain)
   (if domain
       (format nil "~a@~a" feature domain)
@@ -447,6 +538,82 @@
 		 object-spec)
 	ret)))
 
+(defun object-spec-to-id-spec (object-spec)
+  (let (dest)
+    (dolist (cell object-spec)
+      (cond ((eq (car cell) '=_id)
+	     )
+	    ((concord:id-feature-name-p (car cell))
+	     (setq dest (adjoin cell dest :test #'equal))
+	     )
+	    ((member (format nil "~a" (car cell))
+		     '( ; "name" "name*"
+		       "=>iwds-1*note")
+		     :test #'equal)
+	     (setq dest (adjoin cell dest :test #'equal))
+	     )))
+    dest))
+
+(defun object-spec-to-grain-spec (object-spec)
+  (let ((granularity-rank -1)
+	granularity ret dest)
+    (dolist (cell object-spec)
+      (cond ((eq (car cell) '=_id)
+	     )
+	    ((eq (car cell) '=>ucs)
+	     )
+	    ((null (cdr cell))
+	     )
+	    ((concord:id-feature-name-p (car cell))
+	     (multiple-value-bind (name gname rank)
+		 (split-ccs-feature-name (car cell))
+	       (if (< granularity-rank rank)
+		   (setq granularity-rank rank 
+			 granularity gname))
+	       (setq name (read-from-string name))
+	       (cond
+		 ((setq ret (assoc name dest))
+		  (unless (member (cdr cell) ret)
+		    (setf (cdr (assoc name dest))
+			  (cons (cdr cell) (cdr ret))))
+		  )
+		 (t
+		  (setq dest (cons (list name (cdr cell))
+				   dest))
+		  )))
+	     )
+	    ((member (format nil "~a" (car cell))
+		     '( ; "name" "name*"
+		       "=>iwds-1*note")
+		     :test #'equal)
+	     (setq dest (adjoin cell dest :test #'equal))
+	     )))
+    (values (mapcar (lambda (cell)
+		      (if (consp (cdr cell))
+			  (cons (car cell)
+				(apply #'vector (cdr cell)))
+			  cell))
+		    dest)
+	    granularity granularity-rank)))
+
+(defmethod generate-object-cid ((g genre) spec)
+  (cond
+    ((eql (genre-name g) 'character)
+     (multiple-value-bind (g-spec granularity granularity-rank)
+	 (object-spec-to-grain-spec spec)
+       (let ((u-cid (ipfs-dag-put
+		     (json-encode-bare-ccs-spec g-spec)
+		     :json-input t)))
+	 (ipfs-dag-put
+	  (format nil
+		  "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
+		   granularity u-cid)
+	  :json-input t)))
+     )
+    (t
+     (generate-object-id g)
+     )))
+
 (defun define-object (genre object-spec &key id)
   (if (symbolp genre)
       (setq genre (genre (or genre 'default))))
@@ -463,6 +630,10 @@
 	   (setq obj (genre-make-object genre id))
 	   )
 	  ((setq obj (find-object genre object-spec))
+	   )
+	  ((and *use-ipld-based-object-id*
+		(setq id (generate-object-cid genre object-spec)))
+	   (setq obj (genre-make-object genre id))
 	   )
 	  ((setq id (generate-object-id genre))
 	   (setq obj (genre-make-object genre id))
