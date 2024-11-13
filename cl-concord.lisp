@@ -27,14 +27,21 @@
    :sequence-list-p :association-list-p
    :while
    :ipfs-dag-put
-   :*use-ipld-based-object-id*
-   :=id :=_id :=ucs :=>ucs))
+   :*use-ipld-based-object-id* :*ipfs-command-path*
+   :=id :=_id :=ucs :=>ucs
+   :encode-json))
 
 (in-package :concord)
 
 (defvar *use-ipld-based-object-id* nil)
 
-(defvar *ipfs-command-path* "/opt/homebrew/bin/ipfs")
+(defvar *ipfs-command-path*
+  (let (path)
+    (dolist (dir (uiop:getenv-absolute-directories "PATH"))
+      (setq path (make-pathname :directory (pathname-directory dir)
+				:name "ipfs"))
+      (if (probe-file path)
+	  (return path)))))
 
 (defmacro while (test &body body)
   `(loop while ,test do ,@body))
