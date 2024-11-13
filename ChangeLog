@@ -1,5 +1,9 @@
 2024-11-13  MORIOKA Tomohiko  <tomo.git@chise.org>
 
+	* cl-concord.asd (version): Update to "1.1".
+
+2024-11-13  MORIOKA Tomohiko  <tomo.git@chise.org>
+
 	* cl-concord.lisp:
 	- Export `*ipfs-command-path*' and `encode-json'.
 	(*ipfs-command-path*): Search "ipfs" command from the environment
