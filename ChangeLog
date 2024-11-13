@@ -1,3 +1,10 @@
+2024-11-13  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp:
+	- Export `*ipfs-command-path*' and `encode-json'.
+	(*ipfs-command-path*): Search "ipfs" command from the environment
+	variable "PATH".
+
 2024-11-12  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: Support IPLD based object ID for the character
