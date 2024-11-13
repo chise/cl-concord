@@ -1,3 +1,26 @@
+2024-11-12  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp: Support IPLD based object ID for the character
+	genre.
+	- Export `object-spec-to-id-spec', `ipfs-dag-put',
+	  `*use-ipld-based-object-id*', `=>ucs'.
+	(*use-ipld-based-object-id*): New variable.
+	(*ipfs-command-path*): New variable.
+	(json-encode-vector-with-sort): New function.
+	(split-ccs-feature-name): New function.
+	(object-spec-to-id-spec): New function.
+	(object-spec-to-grain-spec): New function.
+	(generate-object-cid): New function.
+	(define-object): Try to use `generate-object-cid' if
+	`*use-ipld-based-object-id*' is not nil.
+
+2024-11-08  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (depends-on): Use `cl-json'.
+	(components): Add `concord-json'.
+
+	* concord-json.lisp: New file.
+
 2024-09-29  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "1.0".
