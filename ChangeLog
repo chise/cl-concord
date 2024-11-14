@@ -1,3 +1,11 @@
+2024-11-14  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (ipld-put): Renamed from `ipfs-dag-put'; new
+	implementation: use `ipfs::ipfs-call' [Drakma] instead of
+	`sb-ext:run-program'.
+
+	* cl-concord.asd (depends-on): Use `cl-ipfs-api2'.
+
 2024-11-13  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "1.1".
