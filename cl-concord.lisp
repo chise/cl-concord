@@ -26,7 +26,7 @@
    :expand-feature-name
    :sequence-list-p :association-list-p
    :while
-   :ipfs-dag-put
+   :ipld-put
    :*use-ipld-based-object-id* :*ipfs-command-path*
    :=id :=_id :=ucs :=>ucs
    :encode-json))
@@ -87,21 +87,17 @@
     (setf (aref dest 0) #\{)
     (concatenate 'string dest "}")))
        
-(defun ipfs-dag-put (data &key pin json-input)
-  (let ((cid-s (make-string-output-stream)))
-    (with-input-from-string (in
- 			     (if json-input
-				 data
-				 (let ((s (make-string-output-stream)))
-				   (encode-json data s)
-				   (get-output-stream-string s))))
-      (sb-ext:run-program
-       *ipfs-command-path*
-       (if pin
-	   '("dag" "put" "--pin")
-	   '("dag" "put"))
-       :input in :output cid-s)
-      (read-from-string (get-output-stream-string cid-s)))))
+(defun ipld-put (data &key pin json-input)
+  (let ((in (flexi-streams:make-in-memory-input-stream
+	     (map 'vector #'char-code
+ 		  (if json-input
+		      data
+		      (let ((s (make-string-output-stream)))
+			(encode-json data s)
+			(get-output-stream-string s)))))))
+    (read-from-string
+     (ipfs::ipfs-call "dag/put" `(("pin" ,pin))
+		      :parameters `((:stream ,in))))))
 
 (defun sequence-list-p (object)
   (cond ((null object))
@@ -608,10 +604,10 @@
     ((eql (genre-name g) 'character)
      (multiple-value-bind (g-spec granularity granularity-rank)
 	 (object-spec-to-grain-spec spec)
-       (let ((u-cid (ipfs-dag-put
+       (let ((u-cid (ipld-put
 		     (json-encode-bare-ccs-spec g-spec)
 		     :json-input t)))
-	 (ipfs-dag-put
+	 (ipld-put
 	  (format nil
 		  "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
 		   granularity u-cid)
