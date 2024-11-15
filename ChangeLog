@@ -1,3 +1,7 @@
+2024-11-15  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (version): Update to "1.2".
+
 2024-11-14  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (ipld-put): Renamed from `ipfs-dag-put'; new
