@@ -1,3 +1,7 @@
+2024-11-29  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (*ipfs-command-path*): Delete variable.
+
 2024-11-15  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "1.2".
