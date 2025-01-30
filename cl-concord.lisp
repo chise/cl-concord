@@ -1,6 +1,4 @@
 (in-package :cl-user)
-(eval-when (:execute :compile-toplevel :load-toplevel)
-  (require 'cl-redis))
 
 (defpackage :concord
   (:use :cl)
