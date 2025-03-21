@@ -547,6 +547,11 @@
 	     )))
     dest))
 
+(defun sort-value-list (value)
+  (if (cdr value)
+      (sort value #'<)
+      value))
+
 (defun object-spec-to-grain-spec (object-spec)
   (let ((granularity-rank -1)
 	granularity ret dest)
@@ -584,7 +589,7 @@
     (values (mapcar (lambda (cell)
 		      (if (consp (cdr cell))
 			  (cons (car cell)
-				(apply #'vector (cdr cell)))
+				(apply #'vector (sort-value-list (cdr cell))))
 			  cell))
 		    dest)
 	    granularity granularity-rank)))
