@@ -1,3 +1,8 @@
+2025-03-21  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (sort-value-list): New function.
+	(object-spec-to-grain-spec): Use `sort-value-list'.
+
 2025-01-30  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp: Eliminate `(require 'cl-redis)'.
