@@ -6,4 +6,5 @@
   :depends-on (:cl-redis :cl-json :cl-ipfs-api2)
   :serial t
   :components ((:file "cl-concord")
+	       (:file "chise-support")
 	       (:file "concord-json")))
