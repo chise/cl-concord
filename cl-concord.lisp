@@ -26,7 +26,16 @@
    :while
    :ipld-put
    :*use-ipld-based-object-id*
-   :=id :=_id :=ucs :=>ucs
+   :=id :=_id
+   :hypernymy :<-denotational :<-subsumptive
+   :hyponymy  :->denotational :->subsumptive
+   :relations
+   :=ucs :=>ucs
+   :phonemic-values :sound
+   :kangxi :shuowen
+   :ideographic-strokes :total-strokes
+   :structure :ideographic-structure
+   :misc
    :encode-json))
 
 (in-package :concord)
@@ -268,9 +277,6 @@
   (let ((pat (format nil "~(~a~):obj:*;~a" genre-name feature-name)))
     (some func (red:keys pat))))
 
-(defvar *ideographic-structure-feature-hash*
-  (make-hash-table :test 'equal))
-
 (defun some-in-feature (func feature-name &key genre ds)
   (unless genre
     (setq genre 'default))
@@ -426,9 +432,8 @@
       (setq feature-name (symbol-name feature-name)))
   (search "*" feature-name))
 
-(defun id-feature-name-p (feature-name)
-  (and (not (metadata-feature-name-p feature-name))
-       (progn
+(defun id-feature-name-p* (feature-name)
+  (and (progn
 	 (if (symbolp feature-name)
 	     (setq feature-name (format nil "~a" feature-name)))
 	 (eql (elt feature-name 0) #\=))
@@ -437,6 +442,10 @@
 		   (or (= pos 1)
 		       (and (= pos 2)
 			    (eql (elt feature-name 1) #\>))))))))
+
+(defun id-feature-name-p (feature-name)
+  (and (not (metadata-feature-name-p feature-name))
+       (id-feature-name-p* feature-name)))
 
 (defun structure-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
@@ -459,13 +468,15 @@
 	     (setq feature-name (format nil "~a" feature-name)))
 	 (eql (search "ideographic-products" feature-name) 0))))
 
+(defun relation-feature-name-p* (feature-name)
+  (if (symbolp feature-name)
+      (setq feature-name (format nil "~a" feature-name)))
+  (or (eql (search "<-" feature-name) 0)
+      (eql (search "->" feature-name) 0)))
+
 (defun relation-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
-       (progn
-	 (if (symbolp feature-name)
-	     (setq feature-name (format nil "~a" feature-name)))
-	 (or (eql (search "<-" feature-name) 0)
-	     (eql (search "->" feature-name) 0)))))
+       (relation-feature-name-p* feature-name)))
 
 (defun make-reversed-relation-feature-name (feature-name)
   (and (not (metadata-feature-name-p feature-name))
@@ -482,6 +493,37 @@
 		 (format nil "<-~a"
 			 (subseq feature-name 2)))
 		)))))
+
+(defun split-metadata-feature-name (feature-name)
+  (if (symbolp feature-name)
+      (setq feature-name (format nil "~a" feature-name)))
+  (let (pos istr ibeg base ibase meta idx)
+    (when (and (setq pos (search "*" feature-name))
+	       (< 0 pos)
+	       (< pos (1- (length feature-name))))
+      (setq base (subseq feature-name 0 pos)
+	    meta (read-from-string (format nil ":~a" (subseq feature-name (1+ pos)))))
+      (cond
+	((and (setq ibeg (search "$_" base))
+	      (setq istr (subseq base (+ ibeg 2) pos)
+		    ibase (subseq base 0 ibeg))
+	      (multiple-value-bind (val iend)
+		  (read-from-string istr)
+		(and (numberp val)
+		     (= iend (length istr))
+		     (setq idx val))))
+	 (list (read-from-string ibase) idx meta)
+	 )
+	(t
+	 (list (read-from-string base) nil meta))))))
+
+(defun split-feature-name-with-domain (feature-name)
+  (if (symbolp feature-name)
+      (setq feature-name (format nil "~a" feature-name)))
+  (let (pos)
+    (when (setq pos (search "@" feature-name))
+      (cons (read-from-string (subseq feature-name 0 pos))
+	    (read-from-string (subseq feature-name (1+ pos)))))))
 
 (defun split-ccs-feature-name (feature-name)
   (if (eq feature-name '=ucs)
@@ -552,19 +594,266 @@
       (sort value #'<)
       value))
 
+(defun register-combined-feature-value (combined-feature-alist base domain value)
+  (let (ret0 ret i val)
+    (cond ((setq ret0 (assoc base combined-feature-alist))
+	   (cond ((setq ret (assoc domain (cdr ret0)))
+		  (cond ((and (setq val (getf (cdr ret) :value))
+			      (vectorp val))
+			 (if (< (length val)(length value))
+			     (setq val (adjust-array val (length value)
+						     :initial-element nil)))
+			 (setf (getf (cdr ret) :value) val)
+			 (setq i 0)
+			 (dolist (item value)
+			   (setf (getf (aref val i) :value) item)
+			   (setq i (1+ i)))
+			 )
+			(t
+			 (setf (getf (cdr ret) :value) value)
+			 ))
+		  )
+		 (t
+		  (setf (cdr ret0)
+			(cons (cons domain `(:value ,value))
+			      (cdr ret0)))
+		  ))
+	   combined-feature-alist)
+	  (t
+	   (setf combined-feature-alist
+		 (cons (cons base (list (cons domain
+					      `(:value ,value))))
+		       combined-feature-alist))
+	   ))))
+
+(defun register-combined-item-metadata (combined-feature-alist base domain idx meta value)
+  (let (ret0 ret val)
+    (cond ((setq ret0 (assoc base combined-feature-alist))
+	   (cond ((setq ret (assoc domain (cdr ret0)))
+		  (cond ((setq val (getf (cdr ret) :value))
+			 (when (listp val)
+			   (setq val (apply #'vector (mapcar (lambda (item)
+							       (list :value item))
+							     val))))
+			 (if (< (length val) idx)
+			     (setq val (adjust-array val idx :initial-element nil)))
+			 )
+			(t
+			 (setq val (make-array idx :initial-element nil))
+			 ))
+		  (setf (getf (cdr ret) :value) val)
+		  )
+		 (t
+		  (setq val (make-array idx :initial-element nil))
+		  (setf (cdr ret0)
+			(cons (cons domain (list :value val))
+			      (cdr ret0)))
+		  ))
+	   )
+	  (t
+	   (setq val (make-array idx :initial-element nil))
+	   (setq combined-feature-alist
+		 (cons (cons base (list (cons domain
+					      (list :value val))))
+		       combined-feature-alist))
+	   ))
+    (setf (getf (aref val (1- idx)) meta) value)
+    combined-feature-alist))
+
+(defun register-combined-feature-metadata (combined-feature-alist base domain meta value)
+  (let (ret0 ret)
+    (cond ((setq ret0 (assoc base combined-feature-alist))
+	   (cond ((setq ret (assoc domain (cdr ret0)))
+		  (setf (getf (cdr ret) meta) value)
+		  combined-feature-alist)
+		 (t
+		  (setf (cdr ret0)
+			(cons (cons domain
+ 				    (list meta value))
+			      (cdr ret0)))
+		  ))
+	   )
+	  (t
+	   (setf combined-feature-alist
+		 (cons (cons base (list (cons domain
+					      (list meta value))))
+		       combined-feature-alist))
+	   ))
+    combined-feature-alist))
+
 (defun object-spec-to-grain-spec (object-spec)
   (let ((granularity-rank -1)
-	granularity ret dest)
+	granularity ret dest
+	id-meta-list
+	fname base domain
+	fname-str type pos
+	radical-str
+	meta-spec
+	hypernymy-alist
+	hyponymy-alist
+	radical-strokes-alist
+	phonemic-values-alist
+	structure-alist
+	misc-alist
+	relations-alist)
     (dolist (cell object-spec)
-      (cond ((eq (car cell) '=_id)
+      (setq fname (car cell))
+      (cond ((eq fname '=_id)
 	     )
-	    ((eq (car cell) '=>ucs)
+	    ((eq fname '=>ucs)
+	     (setq misc-alist
+	      	   (register-combined-feature-value
+		    misc-alist fname nil (cdr cell)))
 	     )
 	    ((null (cdr cell))
+	     (if (setq ret (split-feature-name-with-domain fname))
+		 (setq base (car ret)
+		       domain (cdr ret))
+		 (setq base fname
+		       domain nil))
+	     (setq misc-alist
+	      	   (register-combined-feature-value
+		    misc-alist base domain (cdr cell)))
 	     )
-	    ((concord:id-feature-name-p (car cell))
+	    ((setq meta-spec (split-metadata-feature-name fname))
+	     (cond ((id-feature-name-p* (car meta-spec))
+		    (setq id-meta-list (cons cell id-meta-list))
+		    )
+		   (t
+		    (if (setq ret (split-feature-name-with-domain (car meta-spec)))
+			(setq base (car ret)
+			      domain (cdr ret))
+			(setq base (car meta-spec)
+			      domain nil))
+		    (setq fname-str (format nil "~a" fname))
+		    (cond
+		      ((eq base 'ideographic-structure)
+		       (setq structure-alist
+			     (cond
+ 			       ((null (nth 1 meta-spec))
+				(register-combined-feature-metadata
+				 structure-alist
+				 base domain (nth 2 meta-spec) (cdr cell))
+				)
+			       (t
+				(register-combined-item-metadata
+				 structure-alist
+				 base domain (nth 1 meta-spec)
+				 (nth 2 meta-spec) (cdr cell))
+				)))
+		       )
+		      ((eq base 'sound)
+		       (setq phonemic-values-alist
+			     (cond ((null (nth 1 meta-spec))
+				    (register-combined-feature-metadata
+				     phonemic-values-alist
+				     base domain (nth 2 meta-spec) (cdr cell))
+				    )
+				   (t
+				    (register-combined-item-metadata
+				     phonemic-values-alist
+				     base domain (nth 1 meta-spec)
+				     (nth 2 meta-spec) (cdr cell))
+				    )))
+		       )
+		      ((eq base 'total-strokes)
+		       (setq radical-strokes-alist
+			     (register-combined-feature-metadata
+			      radical-strokes-alist
+			      nil domain
+			      (read-from-string
+			       (format nil ":total-strokes*~a" (nth 2 meta-spec)))
+			      (cdr cell)))
+		       )
+		      ((setq pos (search "-radical" fname-str))
+		       (setq type (subseq fname-str 0 pos))
+		       (setq type (if (string= type "ideographic")
+				      'kangxi
+				      (read-from-string type)))
+		       (register-combined-feature-metadata
+			radical-strokes-alist
+			type domain
+			(read-from-string
+			 (format nil ":radical-number*~a" (nth 2 meta-spec)))
+			(cdr cell))
+		       )
+		      ((setq pos (search "-strokes" fname-str))
+		       (setq type (subseq fname-str 0 pos))
+		       (setq type (if (string= type "ideographic")
+				      'kangxi
+				      (read-from-string type)))
+		       (setq radical-strokes-alist
+			     (register-combined-feature-metadata
+			      radical-strokes-alist
+			      type domain
+			      (read-from-string
+			       (format nil ":body-strokes*~a" (nth 2 meta-spec)))
+			      (cdr cell)))
+		       )
+		      ((relation-feature-name-p* base)
+		       (cond ((member base '(<-denotational <-subsumptive))
+			      (setq hypernymy-alist
+				    (cond
+ 				      ((null (nth 1 meta-spec))
+				       (register-combined-feature-metadata
+					hypernymy-alist
+					base domain (nth 2 meta-spec) (cdr cell))
+				       )
+				      (t
+	      			       (register-combined-item-metadata
+					hypernymy-alist
+					base domain (nth 1 meta-spec)
+					(nth 2 meta-spec) (cdr cell))
+				       )))
+			      )
+			     ((member base '(->denotational ->subsumptive))
+			      (setq hyponymy-alist
+				    (cond
+ 				      ((null (nth 1 meta-spec))
+				       (register-combined-feature-metadata
+					hyponymy-alist
+					base domain (nth 2 meta-spec) (cdr cell))
+				       )
+				      (t
+				       (register-combined-item-metadata
+					hyponymy-alist
+					base domain (nth 1 meta-spec)
+					(nth 2 meta-spec) (cdr cell))
+				       )))
+			      )
+			     (t
+			      (setq relations-alist
+				    (cond
+ 				      ((null (nth 1 meta-spec))
+				       (register-combined-feature-metadata
+					relations-alist
+					base domain (nth 2 meta-spec) (cdr cell))
+				       )
+				      (t
+				       (register-combined-item-metadata
+					relations-alist
+					base domain (nth 1 meta-spec)
+					(nth 2 meta-spec) (cdr cell)))
+				      ))
+			      ))
+		       )
+		      ((null (nth 1 meta-spec))
+		       (setq misc-alist
+			     (register-combined-feature-metadata
+			      misc-alist
+			      base domain (nth 2 meta-spec) (cdr cell)))
+		       )
+		      (t
+		       (setq misc-alist
+			     (register-combined-item-metadata
+			      misc-alist
+			      base domain (nth 1 meta-spec)
+			      (nth 2 meta-spec) (cdr cell)))
+		       ))))
+	     )
+	    ((id-feature-name-p* fname)
 	     (multiple-value-bind (name gname rank)
-		 (split-ccs-feature-name (car cell))
+		 (split-ccs-feature-name fname)
 	       (if (< granularity-rank rank)
 		   (setq granularity-rank rank 
 			 granularity gname))
@@ -580,11 +869,102 @@
 				   dest))
 		  )))
 	     )
-	    ((member (format nil "~a" (car cell))
+	    ((relation-feature-name-p* fname)
+	     (if (setq ret (split-feature-name-with-domain fname))
+		 (setq base (car ret)
+		       domain (cdr ret))
+		 (setq base fname
+		       domain nil))
+	     (cond ((member base '(<-denotational <-subsumptive))
+		    (setq hypernymy-alist
+	      		  (register-combined-feature-value
+	     		   hypernymy-alist base domain (cdr cell)))
+		    )
+		   ((member base '(->denotational ->subsumptive))
+		    (setq hyponymy-alist
+	      		  (register-combined-feature-value
+	     		   hyponymy-alist base domain (cdr cell)))
+		    )
+		   (t
+		    (setq relations-alist
+	      		  (register-combined-feature-value
+	     		   relations-alist base domain (cdr cell)))
+		    ))
+	     )
+	    ((member (format nil "~a" fname)
 		     '( ; "name" "name*"
 		       "=>iwds-1*note")
 		     :test #'equal)
 	     (setq dest (adjoin cell dest :test #'equal))
+	     )
+	    (t
+	     (if (setq ret (split-feature-name-with-domain fname))
+		 (setq base (car ret)
+		       domain (cdr ret))
+		 (setq base fname
+		       domain nil))
+	     (setq fname-str (format nil "~a" fname))
+	     (cond ((eq base 'ideographic-structure)
+		    (setq structure-alist
+	      		  (register-combined-feature-value
+	     		   structure-alist base domain (cdr cell)))
+		    )
+		   ((eq base 'sound)
+		    (setq phonemic-values-alist
+	      		  (register-combined-feature-value
+	     		   phonemic-values-alist base domain (cdr cell)))
+		    )
+		   ((eq base 'total-strokes)
+		    (setq radical-strokes-alist
+			  (register-combined-feature-value
+			   radical-strokes-alist
+			   base domain
+			   (cdr cell)))
+		    )
+		   ((setq pos (search "-radical" fname-str))
+		    (setq type (subseq fname-str 0 pos))
+		    (setq type (if (string= type "ideographic")
+				   'kangxi
+				   (read-from-string type)))
+		    (setq radical-strokes-alist
+			  (register-combined-feature-metadata
+			   radical-strokes-alist
+			   type domain
+			   :radical-number
+			   (cdr cell)))
+		    (setq radical-str
+			  (cond
+			    ((eq type 'kangxi)
+			     (format nil "~a" (code-char (+ #x2EFF (cdr cell))))
+			     )
+			    ((eq type 'shuowen)
+			     (format nil "~a" (aref shuowen-radicals
+						    (1- (cdr cell))))
+			     )
+			    ))
+		    (when radical-str
+		      (setq radical-strokes-alist
+			    (register-combined-feature-metadata
+			     radical-strokes-alist
+			     type domain
+			     :radical radical-str)))
+		    )
+		   ((setq pos (search "-strokes" fname-str))
+		    (setq type (subseq fname-str 0 pos))
+		    (setq type (if (string= type "ideographic")
+				   'kangxi
+				   (read-from-string type)))
+		    (setq radical-strokes-alist
+			  (register-combined-feature-metadata
+			   radical-strokes-alist
+			   type domain
+			   :body-strokes (cdr cell)))
+		    )
+		   (t
+		    (setq misc-alist
+	      		  (register-combined-feature-value
+	     		   misc-alist base domain (cdr cell)))
+		    ))
 	     )))
     (values (mapcar (lambda (cell)
 		      (if (consp (cdr cell))
@@ -592,12 +972,32 @@
 				(apply #'vector (sort-value-list (cdr cell))))
 			  cell))
 		    dest)
-	    granularity granularity-rank)))
+	    granularity granularity-rank id-meta-list
+	    (nconc
+	     (and hypernymy-alist
+		  (list (cons 'hypernymy
+			      hypernymy-alist)))
+	     (and radical-strokes-alist
+		  (list (cons 'radical-and-strokes
+			      radical-strokes-alist)))
+	     (and structure-alist
+		  (list (cons 'structure
+			      structure-alist)))
+	     (and phonemic-values-alist
+		  (list (cons 'phonemic-values
+			      phonemic-values-alist)))
+	     (and misc-alist
+		  (list (cons 'misc misc-alist)))
+	     (and hyponymy-alist
+		  (list (cons 'hyponymy
+			      hyponymy-alist))))
+	    relations-alist)))
 
 (defmethod generate-object-cid ((g genre) spec)
   (cond
     ((eql (genre-name g) 'character)
-     (multiple-value-bind (g-spec granularity granularity-rank)
+     (multiple-value-bind (g-spec granularity granularity-rank
+			   body-spec relations-spec)
 	 (object-spec-to-grain-spec spec)
        (let ((u-cid (ipld-put
 		     (json-encode-bare-ccs-spec g-spec)
