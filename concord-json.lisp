@@ -3,17 +3,17 @@
 (require 'cl-json)
 
 (defmethod json:encode-json ((obj concord:object) &optional (stream json:*json-output*))
-  (let ((genre (concord:genre-name (concord:object-genre obj))))
+  (let ((genre (concord:genre-name (concord:object-genre obj)))
+	(id (concord:object-id obj)))
     (json:encode-json
-     (if (eq genre 'character)
-	 (or (char-ccs-spec obj)
-	     (remove-if (lambda (cell)
-			  (or (eq (car cell) 'ideographic-products)
-			      (eql (search "<-" (symbol-name (car cell))) 0)
-			      (eql (search "->" (symbol-name (car cell))) 0)))
-			(concord:object-spec obj)))
-	 (cons (cons :genre genre) (concord:object-spec obj)))
-     stream)))
+     (list (cons "genre" genre)
+	   (cons "ref"
+		 (if (and (symbolp id)
+			  (= (length (symbol-name id)) 59)
+			  (eql (aref (symbol-name id) 0) #\B)
+			  (eql (aref (symbol-name id) 1) #\A))
+		     (list (cons "/" (format nil "~a" id)))
+		     id))))))
 
 (defmethod json:encode-json ((s symbol) &optional (stream json:*json-output*))
   "Write the JSON representation of the symbol S to STREAM (or to
