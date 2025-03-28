@@ -1,3 +1,36 @@
+2025-03-27  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp:
+	- Export `hypernymy', `<-denotational', `<-subsumptive',
+	  `hyponymy', `->denotational', `->subsumptive', `relations',
+	  `phonemic-values', `sound', `kangxi', `shuowen',
+	  `ideographic-strokes', `total-strokes', `structure',
+	  `ideographic-structure', `misc'.
+	(*ideographic-structure-feature-hash*): Moved to
+	chise-support.lisp.
+	(id-feature-name-p*): New function [like `id-feature-name-p', but
+	don't check `metadata-feature-name-p'].
+	(id-feature-name-p): Use `id-feature-name-p*'.
+	(relation-feature-name-p*): New function [like
+	`relation-feature-name-p', but don't check `metadata-feature-name-p'].
+	(relation-feature-name-p): Use `relation-feature-name-p*'.
+	(split-metadata-feature-name): New function.
+	(split-feature-name-with-domain): New function.
+	(register-combined-feature-value): New function.
+	(register-combined-item-metadata): New function.
+	(register-combined-feature-metadata): New function.
+	(object-spec-to-grain-spec): Parse and convert other features; use
+	`split-metadata-feature-name', `relation-feature-name-p*',
+	`register-combined-feature-value',
+	`register-combined-feature-metadata' and
+	`register-combined-item-metadata'; use `id-feature-name-p*' instead of
+	`concord:id-feature-name-p'.
+	(generate-object-cid): Modify for `object-spec-to-grain-spec' to get
+	body-spec and relations-spec.
+
+	* concord-json.lisp (json:encode-json): Modify to use link for
+	IPLD/DASL CID.
+
 2025-03-25  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd: Add "chise-support".
