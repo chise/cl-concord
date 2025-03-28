@@ -1,3 +1,9 @@
+2025-03-25  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd: Add "chise-support".
+
+	* chise-support.lisp: New file.
+
 2025-03-21  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (sort-value-list): New function.
