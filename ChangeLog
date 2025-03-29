@@ -1,3 +1,9 @@
+2025-03-29  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp: New file.
+
+	* cl-concord.asd: Add "concord-ipld".
+
 2025-03-27  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp:
