@@ -40,8 +40,6 @@
 
 (in-package :concord)
 
-(defvar *use-ipld-based-object-id* nil)
-
 (defmacro while (test &body body)
   `(loop while ,test do ,@body))
 
@@ -84,19 +82,7 @@
 			    (json-encode-vector-with-sort (cdr pair))))
 			 spec)))
     (setf (aref dest 0) #\{)
-    (concatenate 'string dest "}")))
-       
-(defun ipld-put (data &key pin json-input)
-  (let ((in (flexi-streams:make-in-memory-input-stream
-	     (map 'vector #'char-code
- 		  (if json-input
-		      data
-		      (let ((s (make-string-output-stream)))
-			(encode-json data s)
-			(get-output-stream-string s)))))))
-    (read-from-string
-     (ipfs::ipfs-call "dag/put" `(("pin" ,pin))
-		      :parameters `((:stream ,in))))))
+    (concatenate 'string dest "}")))       
 
 (defun sequence-list-p (object)
   (cond ((null object))
@@ -683,6 +669,48 @@
 
 (defun object-spec-to-grain-spec (object-spec)
   (let ((granularity-rank -1)
+	granularity ret dest)
+    (dolist (cell object-spec)
+      (cond ((eq (car cell) '=_id)
+	     )
+	    ((eq (car cell) '=>ucs)
+	     )
+	    ((null (cdr cell))
+	     )
+	    ((id-feature-name-p (car cell))
+	     (multiple-value-bind (name gname rank)
+		 (split-ccs-feature-name (car cell))
+	       (if (< granularity-rank rank)
+		   (setq granularity-rank rank 
+			 granularity gname))
+	       (setq name (read-from-string name))
+	       (cond
+		 ((setq ret (assoc name dest))
+		  (unless (member (cdr cell) ret)
+		    (setf (cdr (assoc name dest))
+			  (cons (cdr cell) (cdr ret))))
+		  )
+		 (t
+		  (setq dest (cons (list name (cdr cell))
+				   dest))
+		  )))
+	     )
+	    ((member (format nil "~a" (car cell))
+		     '( ; "name" "name*"
+		       "=>iwds-1*note")
+		     :test #'equal)
+	     (setq dest (adjoin cell dest :test #'equal))
+	     )))
+    (values (mapcar (lambda (cell)
+		      (if (consp (cdr cell))
+			  (cons (car cell)
+				(apply #'vector (sort-value-list (cdr cell))))
+			  cell))
+		    dest)
+	    granularity granularity-rank)))
+
+(defun separate-object-spec (object-spec)
+  (let ((granularity-rank -1)
 	granularity ret dest
 	id-meta-list
 	fname base domain
@@ -992,25 +1020,6 @@
 		  (list (cons 'hyponymy
 			      hyponymy-alist))))
 	    relations-alist)))
-
-(defmethod generate-object-cid ((g genre) spec)
-  (cond
-    ((eql (genre-name g) 'character)
-     (multiple-value-bind (g-spec granularity granularity-rank
-			   body-spec relations-spec)
-	 (object-spec-to-grain-spec spec)
-       (let ((u-cid (ipld-put
-		     (json-encode-bare-ccs-spec g-spec)
-		     :json-input t)))
-	 (ipld-put
-	  (format nil
-		  "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-		   granularity u-cid)
-	  :json-input t)))
-     )
-    (t
-     (generate-object-id g)
-     )))
 
 (defun define-object (genre object-spec &key id)
   (if (symbolp genre)
