@@ -1,20 +1,18 @@
 (in-package :concord)
 
-(require 'cl-json)
-
 (defmethod json:encode-json ((obj concord:object) &optional (stream json:*json-output*))
   (let ((genre (concord:genre-name (concord:object-genre obj)))
 	(id (concord:object-id obj)))
     (json:with-object (stream)
       (json:encode-object-member "genre" genre stream)
-      (json:as-object-member ("ref" stream)
-	(if (and (symbolp id)
-		 (= (length (symbol-name id)) 59)
-		 (eql (aref (symbol-name id) 0) #\B)
-		 (eql (aref (symbol-name id) 1) #\A))
-	    (json:with-object (stream)
-	      (json:encode-object-member "/" id stream))
-	    (encode-json id stream))))
+      (cond ((symbol-base32-cid-p id)
+	     (json:as-object-member ("ref" stream)
+	       (json:with-object (stream)
+		 (json:encode-object-member "/" id stream)))
+	     )
+	    (t
+	     (json:encode-object-member "id" id stream)
+	     )))
     stream))
 
 (defmethod json:encode-json ((s symbol) &optional (stream json:*json-output*))
