@@ -4,6 +4,27 @@
 
 	* cl-concord.asd: Add "concord-ipld".
 
+	* cl-concord.lisp (*use-ipld-based-object-id*): Move to
+	concord-ipld.lisp.
+	(ipld-put): Move to concord-ipld.lisp.
+	(object-spec-to-grain-spec): Reverted.
+	(separate-object-spec): Renamed from `object-spec-to-grain-spec'.
+	(generate-object-cid): Move to concord-ipld.lisp.
+
+2025-03-28  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-json.lisp (json:encode-json ((obj concord:object) ...)):
+	Use new representation of concord:object.
+	(encode-identifier-name-to-json): New function.
+	(encode-json): Use `encode-identifier-name-to-json' as `json:*lisp-identifier-name-to-json*'.
+	(encode-json-feature-value-list): New function.
+	(encode-json-feature-value-vector): New function.
+	(encode-json-feature-value): New function.
+	(encode-json-feature-value-plist): New function.
+	(encode-json-feature-domains): New function.
+	(encode-json-feature-spec): New function.
+	(encode-json-category-spec): New function.
+
 2025-03-27  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp:
