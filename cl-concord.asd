@@ -3,7 +3,8 @@
   :version "1.2"
   :author "Tomohiko Morioka"
   :licence "LGPL"
-  :depends-on (:cl-redis :cl-json :cl-ipfs-api2)
+  :depends-on (:trivial-utf-8
+	       :cl-redis :cl-json :cl-ipfs-api2)
   :serial t
   :components ((:file "cl-concord")
 	       (:file "chise-support")
