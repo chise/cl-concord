@@ -667,9 +667,36 @@
 	   ))
     combined-feature-alist))
 
+(defun ideographic-structure-granularity (structure)
+  (let ((granularity-rank -1)
+	granularity ret)
+    (dolist (comp (cdr structure))
+      (cond
+	((and (association-list-p comp)
+	      (setq ret (assoc 'ideographic-structure comp)))
+	 (multiple-value-bind (gname rank)
+	     (ideographic-structure-granularity (cdr ret))
+	   (if (< granularity-rank rank)
+	       (setq granularity-rank rank 
+		     granularity gname)))
+	 )
+	(t
+	 (multiple-value-bind (g-spec gname rank)
+	     (object-spec-to-grain-spec
+	      (object-spec
+	       (cond ((characterp comp)
+		      (object :character (char-code comp))
+		      )
+		     (t comp))))
+	   (if (< granularity-rank rank)
+	       (setq granularity-rank rank 
+		     granularity gname))))))
+    (values granularity granularity-rank)))
+
 (defun object-spec-to-grain-spec (object-spec)
   (let ((granularity-rank -1)
-	granularity ret dest)
+	granularity ret dest
+	structure-alist base domain structure)
     (dolist (cell object-spec)
       (cond ((eq (car cell) '=_id)
 	     )
@@ -700,14 +727,35 @@
 		       "=>iwds-1*note")
 		     :test #'equal)
 	     (setq dest (adjoin cell dest :test #'equal))
+	     )
+	    ((structure-feature-name-p (car cell))
+	     (if (setq ret (split-feature-name-with-domain (car cell)))
+		 (setq base (car ret)
+		       domain (cdr ret))
+		 (setq base (car cell)))
+	     (setq structure-alist
+	      	   (register-combined-feature-value
+	     	    structure-alist base domain (cdr cell)))
 	     )))
-    (values (mapcar (lambda (cell)
-		      (if (consp (cdr cell))
-			  (cons (car cell)
-				(apply #'vector (sort-value-list (cdr cell))))
-			  cell))
-		    dest)
-	    granularity granularity-rank)))
+    (cond (dest
+	   (setq dest
+		 (mapcar (lambda (cell)
+			   (if (consp (cdr cell))
+			       (cons (car cell)
+				     (apply #'vector (sort-value-list (cdr cell))))
+			       cell))
+			 dest))
+	   )
+	  (structure-alist
+	   (setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
+	   (setq domain (car ret)
+		 structure (getf (cdr ret) :value))
+	   (multiple-value-bind (gname rank)
+	       (ideographic-structure-granularity structure)
+	     (setq granularity gname
+		   granularity-rank rank))
+	   ))
+    (values dest granularity granularity-rank structure-alist)))
 
 (defun separate-object-spec (object-spec)
   (let ((granularity-rank -1)
@@ -721,7 +769,7 @@
 	hyponymy-alist
 	radical-strokes-alist
 	phonemic-values-alist
-	structure-alist
+	structure-alist structure
 	misc-alist
 	relations-alist)
     (dolist (cell object-spec)
@@ -994,13 +1042,26 @@
 	     		   misc-alist base domain (cdr cell)))
 		    ))
 	     )))
-    (values (mapcar (lambda (cell)
-		      (if (consp (cdr cell))
-			  (cons (car cell)
-				(apply #'vector (sort-value-list (cdr cell))))
-			  cell))
-		    dest)
-	    granularity granularity-rank id-meta-list
+    (cond (dest
+	   (setq dest
+		 (mapcar (lambda (cell)
+			   (if (consp (cdr cell))
+			       (cons (car cell)
+				     (apply #'vector (sort-value-list (cdr cell))))
+			       cell))
+			 dest))
+	   )
+	  (structure-alist
+	   (setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
+	   (setq domain (car ret)
+		 structure (getf (cdr ret) :value))
+	   (multiple-value-bind (gname rank)
+	       (ideographic-structure-granularity structure)
+	     (setq granularity gname
+		   granularity-rank rank))
+	   ))
+    (values dest granularity granularity-rank id-meta-list
+	    structure-alist
 	    (nconc
 	     (and hypernymy-alist
 		  (list (cons 'hypernymy
@@ -1008,9 +1069,6 @@
 	     (and radical-strokes-alist
 		  (list (cons 'radical-and-strokes
 			      radical-strokes-alist)))
-	     (and structure-alist
-		  (list (cons 'structure
-			      structure-alist)))
 	     (and phonemic-values-alist
 		  (list (cons 'phonemic-values
 			      phonemic-values-alist)))
