@@ -1,3 +1,30 @@
+2025-04-01  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (ideographic-structure-granularity): New
+	function.
+	(object-spec-to-grain-spec): Use `ideographic-structure-granularity'
+	for ideographic-structure based spec [substructures not defined as
+	characters]; return structure-alist.
+	(separate-object-spec): Likewise; separate structure-alist.
+
+	* concord-ipld.lisp (ipld-put): Use `identity' as the value of
+	`json:*lisp-identifier-name-to-json*'.
+	(ipld-get): New function.
+	(generate-object-cid): Use structure-spec based cid if CCS-spec is
+	not existed.
+	(set-object-cid): Likewise; use node-spec is there are no CCS-spec
+	and structure-spec.
+	(setup-object-cid-in-genre): New function.
+
+2025-03-31  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (depends-on): Use `trivial-utf-8'.
+
+2025-03-29  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-json.lisp: Eliminate `(require 'cl-json)'.
+	(json:encode-json for concord:object): Use IPLD link form.
+
 2025-03-29  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp: New file.
