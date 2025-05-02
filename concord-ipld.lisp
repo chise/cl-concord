@@ -51,7 +51,7 @@
   (let ((id (object-id obj))
 	(spec (object-spec obj))
 	(genre (object-genre obj))
-	u-cid ref-cid node-cid node-json-spec)
+	u-cid ref-cid node-cid node-json-spec subj)
     (multiple-value-bind (g-spec granularity granularity-rank
 			  id-meta-list structure-spec node-spec rel-spec)
 	(separate-object-spec spec)
@@ -92,6 +92,19 @@
       (when structure-spec
 	(setq node-spec
 	      (cons (cons 'structure structure-spec)
+		    node-spec)))
+      (when rel-spec
+	(if (and (eq (genre-name genre) 'character)
+		 (numberp id)
+		 (< id #xF0000))
+	    (setq subj (code-char id)))
+	(setq node-spec
+	      (cons (cons 'relations
+			  (mapcar
+			   (lambda (spec)
+			     (concord::feature-domain-spec-expand-value-to-triple
+			      spec (or subj obj)))
+			   rel-spec))
 		    node-spec)))
       (when node-spec
 	(setq node-json-spec
