@@ -34,7 +34,7 @@ and the result is written as String."
       (json:lisp-to-camel-case str)))
 
 (defun encode-json (obj &optional (stream json:*json-output*))
-  (let ((json:*lisp-identifier-name-to-json* #'encode-identifier-name-to-json))
+  (let ((json:*lisp-identifier-name-to-json* #'identity))
     (json:encode-json obj stream)))
 
 (defun encode-json-feature-value-list (obj &optional (stream json:*json-output*))
