@@ -35,6 +35,7 @@
    :kangxi :shuowen
    :ideographic-strokes :total-strokes
    :structure :ideographic-structure
+   :ideographic-combination
    :misc
    :encode-json))
 
@@ -438,7 +439,8 @@
        (progn
 	 (if (symbolp feature-name)
 	     (setq feature-name (format nil "~a" feature-name)))
-	 (eql (search "ideographic-structure" feature-name) 0))))
+	 (or (eql (search "ideographic-structure" feature-name) 0)
+	     (eql (search "ideographic-combination" feature-name) 0)))))
 
 (defun decomposition-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
@@ -667,6 +669,55 @@
 	   ))
     combined-feature-alist))
 
+(defun expand-value-to-triple (value subject relation)
+  (cond
+    ((consp value)
+     (cond
+       ((association-list-p value)
+	(normalize-object-representation value)
+	)
+       ((getf value :value)
+	(setf (getf value :subject) subject)
+	(setf (getf value :relation) relation)
+	(let ((sources (getf value :sources)))
+	  (when sources
+	    (setf (getf value :sources)
+		  (mapcar
+		   (lambda (bid)
+		     (or (decode-object '=chise-bib-id bid :genre 'bibliography)
+			 bid))
+		   sources))))
+	value)
+       ))
+    (t
+     (list :subject subject
+	   :relation relation
+	   :value value))))
+
+(defun domain-spec-expand-value-to-triple (domain-spec subject relation)
+  (setf (getf (cdr domain-spec) :value)
+	(map-into (getf (cdr domain-spec) :value)
+		  (lambda (item)
+		    (expand-value-to-triple item subject relation))
+		  (getf (cdr domain-spec) :value)))
+  (let ((sources (getf (cdr domain-spec) :sources)))
+    (when sources
+      (setf (getf (cdr domain-spec) :sources)
+	    (mapcar
+	     (lambda (bid)
+	       (or (decode-object '=chise-bib-id bid :genre 'bibliography)
+		   bid))
+	     sources))))
+  domain-spec)
+
+(defun feature-domain-spec-expand-value-to-triple (feature-domain-spec subject)
+  (let ((feature-name (car feature-domain-spec)))
+    (cons feature-name
+	  (mapcar
+	   (lambda (domain-spec)
+	     (domain-spec-expand-value-to-triple domain-spec subject feature-name))
+	   (cdr feature-domain-spec)))))
+
 (defun ideographic-structure-granularity (structure)
   (let ((granularity-rank -1)
 	granularity ret)
@@ -681,6 +732,33 @@
 		     granularity gname)))
 	 )
 	(t
+	 (multiple-value-bind (g-spec gname rank)
+	     (object-spec-to-grain-spec
+	      (object-spec
+	       (cond ((characterp comp)
+		      (object :character (char-code comp))
+		      )
+		     (t comp))))
+	   (if (< granularity-rank rank)
+	       (setq granularity-rank rank 
+		     granularity gname))))))
+    (values granularity granularity-rank)))
+
+(defun character-sequence-granularity (character-sequence)
+  (let ((granularity-rank -1)
+	granularity ret)
+    (dolist (comp character-sequence)
+      (cond
+	((and (association-list-p comp)
+	      (setq ret (assoc 'ideographic-structure comp)))
+	 (multiple-value-bind (gname rank)
+	     (ideographic-structure-granularity (cdr ret))
+	   (if (< granularity-rank rank)
+	       (setq granularity-rank rank 
+		     granularity gname)))
+	 )
+	(t
+	 (setq comp (normalize-object-representation comp))
 	 (multiple-value-bind (g-spec gname rank)
 	     (object-spec-to-grain-spec
 	      (object-spec
@@ -747,13 +825,23 @@
 			 dest))
 	   )
 	  (structure-alist
-	   (setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
-	   (setq domain (car ret)
-		 structure (getf (cdr ret) :value))
-	   (multiple-value-bind (gname rank)
-	       (ideographic-structure-granularity structure)
-	     (setq granularity gname
-		   granularity-rank rank))
+	   (cond
+	     ((setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
+	      (setq domain (car ret)
+		    structure (getf (cdr ret) :value))
+	      (multiple-value-bind (gname rank)
+		  (ideographic-structure-granularity structure)
+		(setq granularity gname
+		      granularity-rank rank))
+	      )
+	     ((setq ret (car (cdr (assoc 'ideographic-combination structure-alist))))
+	      (setq domain (car ret)
+		    structure (getf (cdr ret) :value))
+	      (multiple-value-bind (gname rank)
+		  (character-sequence-granularity structure)
+		(setq granularity gname
+		      granularity-rank rank))
+	      ))
 	   ))
     (values dest granularity granularity-rank structure-alist)))
 
@@ -803,7 +891,8 @@
 			      domain nil))
 		    (setq fname-str (format nil "~a" fname))
 		    (cond
-		      ((eq base 'ideographic-structure)
+		      ((or (eq base 'ideographic-structure)
+			   (eq base 'ideographic-combination))
 		       (setq structure-alist
 			     (cond
  			       ((null (nth 1 meta-spec))
@@ -980,7 +1069,8 @@
 		 (setq base fname
 		       domain nil))
 	     (setq fname-str (format nil "~a" fname))
-	     (cond ((eq base 'ideographic-structure)
+	     (cond ((or (eq base 'ideographic-structure)
+			(eq base 'ideographic-combination))
 		    (setq structure-alist
 	      		  (register-combined-feature-value
 	     		   structure-alist base domain (cdr cell)))
@@ -1052,13 +1142,23 @@
 			 dest))
 	   )
 	  (structure-alist
-	   (setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
-	   (setq domain (car ret)
-		 structure (getf (cdr ret) :value))
-	   (multiple-value-bind (gname rank)
-	       (ideographic-structure-granularity structure)
-	     (setq granularity gname
-		   granularity-rank rank))
+	   (cond
+	     ((setq ret (car (cdr (assoc 'ideographic-structure structure-alist))))
+	      (setq domain (car ret)
+		    structure (getf (cdr ret) :value))
+	      (multiple-value-bind (gname rank)
+		  (ideographic-structure-granularity structure)
+		(setq granularity gname
+		      granularity-rank rank))
+	      )
+	     ((setq ret (car (cdr (assoc 'ideographic-combination structure-alist))))
+	      (setq domain (car ret)
+		    structure (getf (cdr ret) :value))
+	      (multiple-value-bind (gname rank)
+		  (character-sequence-granularity structure)
+		(setq granularity gname
+		      granularity-rank rank))
+	      ))
 	   ))
     (values dest granularity granularity-rank id-meta-list
 	    structure-alist
