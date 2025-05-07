@@ -1,3 +1,23 @@
+2025-05-03  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp:
+	- Export `ideographic-combination'.
+	(structure-feature-name-p): Accept "ideographic-combination".
+	(expand-value-to-triple): New function.
+	(domain-spec-expand-value-to-triple): New function.
+	(feature-domain-spec-expand-value-to-triple): New function.
+	(character-sequence-granularity): New function.
+	(object-spec-to-grain-spec): Modify for `ideographic-combination'.
+	(separate-object-spec): Likewise.
+
+2025-05-02  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-json.lisp (encode-json): Use `identity' instead of
+	`encode-identifier-name-to-json' as
+	`json:*lisp-identifier-name-to-json*'.
+
+	* concord-ipld.lisp (set-object-cid): Add `relations'.
+
 2025-04-01  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (ideographic-structure-granularity): New
