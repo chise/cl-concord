@@ -95,7 +95,19 @@
 	((and (consp object)
 	      (consp (car object)))
 	 (association-list-p (cdr object)))))
-  
+
+(defun plist-to-alist (plist)
+  (let (key)
+    (mapcan (lambda (item)
+	      (if key
+		  (prog1
+		      (list (cons key item))
+		    (setq key nil))
+		  (progn
+		    (setq key item)
+		    nil)))
+	    plist)))
+
 (defvar *default-ds* nil "The default data-store of Concord.")
 
 (defclass data-store ()
@@ -674,7 +686,9 @@
     ((consp value)
      (cond
        ((association-list-p value)
-	(normalize-object-representation value)
+	(list :subject subject
+	      :relation relation
+	      :value (normalize-object-representation value))
 	)
        ((getf value :value)
 	(setf (getf value :subject) subject)
@@ -734,11 +748,13 @@
 	(t
 	 (multiple-value-bind (g-spec gname rank)
 	     (object-spec-to-grain-spec
-	      (object-spec
-	       (cond ((characterp comp)
-		      (object :character (char-code comp))
-		      )
-		     (t comp))))
+	      (cond ((characterp comp)
+		     (object-spec
+		      (object :character (char-code comp)))
+		     )
+		    ((association-list-p comp)
+		     comp)
+		    (t (object-spec comp))))
 	   (if (< granularity-rank rank)
 	       (setq granularity-rank rank 
 		     granularity gname))))))
@@ -1236,9 +1252,10 @@
 		 (ucs
 		  (code-char ucs)
 		  )
-		 ((some (lambda (pair)
-			  (id-feature-name-p (car pair)))
-			object-rep)
+		 ((or (assoc 'ideographic-combination object-rep)
+		      (some (lambda (pair)
+			      (id-feature-name-p (car pair)))
+			    object-rep))
 		  (define-object 'character object-rep)
 		  )
 		 (t
