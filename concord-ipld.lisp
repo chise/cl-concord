@@ -23,19 +23,24 @@
     ((eql (genre-name g) 'character)
      (multiple-value-bind (g-spec granularity granularity-rank structure-spec)
 	 (object-spec-to-grain-spec spec)
-       (let ((u-cid (ipld-put
-		     (if g-spec
-			 (json-encode-bare-ccs-spec g-spec)
-			 (let ((json:*lisp-identifier-name-to-json* #'identity)
-			       (s (make-string-output-stream)))
-			   (encode-json-feature-spec structure-spec s)
-			   (get-output-stream-string s)))
-		     :json-input t)))
-	 (ipld-put
-	  (format nil
-		  "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-		  granularity u-cid)
-	  :json-input t)))
+       (let ((u-cid (cond
+		      (g-spec
+		       (ipld-put (json-encode-bare-ccs-spec g-spec)
+				 :json-input t)
+		       )
+		      (structure-spec
+		       (ipld-put (let ((json:*lisp-identifier-name-to-json* #'identity)
+				       (s (make-string-output-stream)))
+				   (encode-json-feature-spec structure-spec s)
+				   (get-output-stream-string s))
+				 :json-input t)))))
+	 (if u-cid
+	     (ipld-put
+	      (format nil
+		      "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
+		      granularity u-cid)
+	      :json-input t)
+	     (generate-object-id g))))
      )
     (t
      (generate-object-id g)
@@ -46,6 +51,42 @@
        (= (length (symbol-name symbol)) 59)
        (eql (aref (symbol-name symbol) 0) #\B)
        (eql (aref (symbol-name symbol) 1) #\A)))
+
+(defun expand-value-to-triple-cid (value subject relation)
+  (let ((arrow-cid
+	  (ipld-put
+	   (list (cons :from (normalize-object-representation value))
+		 (cons :to (normalize-object-representation subject))))))
+    (ipld-put
+     (format nil
+	     "{\"body\": {\"/\": \"~a\"}, \"type\": \"~a\"}"
+	     arrow-cid relation)
+     :json-input t)))
+
+(defun domain-spec-expand-value-to-triple-cid (domain-spec subject relation)
+  (setf (getf (cdr domain-spec) :value)
+	(map-into (getf (cdr domain-spec) :value)
+		  (lambda (item)
+		    (list (cons "/"
+				(expand-value-to-triple-cid item subject relation))))
+		  (getf (cdr domain-spec) :value)))
+  (let ((sources (getf (cdr domain-spec) :sources)))
+    (when sources
+      (setf (getf (cdr domain-spec) :sources)
+	    (mapcar
+	     (lambda (bid)
+	       (or (decode-object '=chise-bib-id bid :genre 'bibliography)
+		   bid))
+	     sources))))
+  domain-spec)
+
+(defun feature-domain-spec-expand-value-to-triple-cid (feature-domain-spec subject)
+  (let ((feature-name (car feature-domain-spec)))
+    (cons feature-name
+	  (mapcar
+	   (lambda (domain-spec)
+	     (domain-spec-expand-value-to-triple-cid domain-spec subject feature-name))
+	   (cdr feature-domain-spec)))))
 
 (defmethod set-object-cid ((obj object))
   (let ((id (object-id obj))
@@ -102,7 +143,7 @@
 	      (cons (cons 'relations
 			  (mapcar
 			   (lambda (spec)
-			     (concord::feature-domain-spec-expand-value-to-triple
+			     (feature-domain-spec-expand-value-to-triple-cid
 			      spec (or subj obj)))
 			   rel-spec))
 		    node-spec)))
