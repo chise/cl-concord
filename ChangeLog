@@ -1,3 +1,20 @@
+2025-05-09  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (generate-object-cid): Fixed.
+	(expand-value-to-triple-cid): New function.
+	(domain-spec-expand-value-to-triple-cid): New function.
+	(feature-domain-spec-expand-value-to-triple-cid): New function.
+	(set-object-cid): Use `feature-domain-spec-expand-value-to-triple-cid'
+	to `concord::feature-domain-spec-expand-value-to-triple'.
+
+2025-05-07  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (plist-to-alist): New function.
+	(expand-value-to-triple): Fixed.
+	(ideographic-structure-granularity): Fixed to support char-spec.
+	(normalize-object-representation): Fixed to support
+	`ideographic-combination'.
+
 2025-05-03  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp:
