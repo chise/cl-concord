@@ -2,6 +2,12 @@
 
 (defvar *use-ipld-based-object-id* nil)
 
+(defun ipfs-cbor-put (data &key pin)
+  (let ((in (flexi-streams:make-in-memory-input-stream data)))
+    (ipfs::ipfs-call "dag/put" `(("pin" ,pin)
+				 ("input-codec" "dag-cbor"))
+		     :parameters `((:stream ,in)))))
+
 (defun ipld-put (data &key pin json-input)
   (let ((in (flexi-streams:make-in-memory-input-stream
 	     (map 'vector #'char-code
