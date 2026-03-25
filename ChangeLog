@@ -1,3 +1,7 @@
+2026-03-24  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (ipfs-cbor-put): New function.
+
 2025-05-09  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (generate-object-cid): Fixed.
