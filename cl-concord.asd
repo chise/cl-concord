@@ -4,7 +4,8 @@
   :author "Tomohiko Morioka"
   :licence "LGPL"
   :depends-on (:trivial-utf-8
-	       :cl-redis :cl-json :cl-ipfs-api2)
+	       :cl-redis :cl-dasl
+	       :cl-json :cl-ipfs-api2)
   :serial t
   :components ((:file "cl-concord")
 	       (:file "chise-support")
