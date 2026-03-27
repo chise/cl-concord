@@ -591,7 +591,9 @@
 
 (defun sort-value-list (value)
   (if (cdr value)
-      (sort value #'<)
+      (if (some #'stringp value)
+	  value
+	  (sort value #'<))
       value))
 
 (defun register-combined-feature-value (combined-feature-alist base domain value)
@@ -1253,6 +1255,7 @@
 		  (code-char ucs)
 		  )
 		 ((or (assoc 'ideographic-combination object-rep)
+		      (assoc 'ideographic-structure object-rep)
 		      (some (lambda (pair)
 			      (id-feature-name-p (car pair)))
 			    object-rep))
@@ -1264,13 +1267,14 @@
      )
     ((and (consp object-rep)
 	  (symbolp (car object-rep))
+	  (not (keywordp (car object-rep)))
 	  (association-list-p (nth 1 object-rep)))
      (define-object (genre (car object-rep) :ds ds)
 	 (nth 1 object-rep))
      )
     (t
      object-rep)))
-     
+
 (defmethod object-put ((obj object) feature value)
   (let* ((genre (object-genre obj))
 	 (ds (genre-ds genre))
