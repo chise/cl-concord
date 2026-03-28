@@ -9,20 +9,37 @@
 		     :parameters `((:stream ,in)))))
 
 (defun ipld-put (data &key pin json-input)
-  (let ((in (flexi-streams:make-in-memory-input-stream
-	     (map 'vector #'char-code
- 		  (if json-input
-		      data
-		      (let ((json:*lisp-identifier-name-to-json* #'identity)
-			    (s (make-string-output-stream)))
-			(encode-json data s)
-			(get-output-stream-string s)))))))
-    (read-from-string
-     (ipfs::ipfs-call "dag/put" `(("pin" ,pin))
-		      :parameters `((:stream ,in))))))
+  (if json-input
+      (let ((in (flexi-streams:make-in-memory-input-stream
+		 (map 'vector #'char-code
+ 		      (if json-input
+			  data
+			  (let ((json:*lisp-identifier-name-to-json* #'identity)
+				(s (make-string-output-stream)))
+			    (encode-json data s)
+			    (get-output-stream-string s)))))))
+	(read-from-string
+	 (ipfs::ipfs-call "dag/put" `(("pin" ,pin))
+			  :parameters `((:stream ,in)))))
+      (ipfs-cbor-put
+       (dasl:encode data) :pin pin)))
 
 (defun ipld-get (cid)
   (trivial-utf-8:utf-8-bytes-to-string (map 'vector #'char-code (ipfs::ipfs-call "dag/get" `(("arg" ,cid))))))
+
+(defmethod dasl:encode-object ((obj concord:object) (output dasl:memstream))
+  (let ((genre (concord:genre-name (concord:object-genre obj)))
+	(id (concord:object-id obj)))
+    (dasl::encode-alist
+     (list (cons "genre" genre)
+	   (cond ((symbol-base32-cid-p id)
+		  (list "ref"
+			(cons "/" (funcall dasl:*symbol-to-string* id)))
+		  )
+		 (t
+		  (cons "id" id)
+		  )))
+     output)))
 
 (defmethod generate-object-cid ((g genre) spec)
   (cond
@@ -59,15 +76,54 @@
        (eql (aref (symbol-name symbol) 1) #\A)))
 
 (defun expand-value-to-triple-cid (value subject relation)
-  (let ((arrow-cid
+  (let (value-obj value-meta
+	arrow-cid key)
+    (cond
+      ((and (consp value)
+	    (keywordp (car value)))
+       (setq value-meta
+	     (mapcan (lambda (item)
+		       (cond
+			 ((eq key :value)
+			  (setq value-obj item)
+			  (setq key nil)
+			  )
+			 ((eq key :references)
+			  (prog1
+			      (list (cons (format nil "~a" key)
+					  (map 'vector
+					       (lambda (ref-item)
+						 (cond
+						   ((consp ref-item)
+						    (list* (cons :description (nth 2 ref-item))
+							   (plist-to-alist (nth 1 ref-item)))
+						    )
+						   (t ref-item)
+						   ))
+					       item)))
+			    (setq key nil))			  
+			  )
+			 (key
+			  (prog1
+			      (list (cons (format nil "~a" key) item))
+			    (setq key nil))
+			  )
+			 (t
+			  (setq key item)
+			  nil)))
+		     value))
+       )
+      (t
+       (setq value-obj value)
+       ))
+    (setq arrow-cid
 	  (ipld-put
-	   (list (cons :from (normalize-object-representation value))
-		 (cons :to (normalize-object-representation subject))))))
+	   (list (cons "from" (normalize-object-representation value-obj))
+		 (cons "to" (normalize-object-representation subject)))))
     (ipld-put
-     (format nil
-	     "{\"body\": {\"/\": \"~a\"}, \"type\": \"~a\"}"
-	     arrow-cid relation)
-     :json-input t)))
+     (list* (list "body" (cons "/" arrow-cid))
+	    (cons "type" relation)
+	    value-meta))))
 
 (defun domain-spec-expand-value-to-triple-cid (domain-spec subject relation)
   (setf (getf (cdr domain-spec) :value)
