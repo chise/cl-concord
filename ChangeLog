@@ -1,3 +1,21 @@
+2026-03-28  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (ipld-put): Use `dasl:encode' and
+	`ipfs-cbor-put' if `json-input' is not specified.
+	(dasl:encode-object): New method for `concord:object' class.
+	(expand-value-to-triple-cid): Support obj-ref [property-list].
+
+2026-03-27  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (sort-value-list): Fixed.
+	(normalize-object-representation): Use `define-object' if
+	`object-rep' has `ideographic-structure' feature; don't treat
+	keyword symbol as feature.
+
+2026-03-25  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.asd (depends-on): Use `cl-dasl'.
+
 2026-03-24  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (ipfs-cbor-put): New function.
