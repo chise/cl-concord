@@ -1,6 +1,6 @@
 (defsystem :cl-concord
   :description "CONCORD implementation based on Common Lisp"
-  :version "1.2"
+  :version "1.9"
   :author "Tomohiko Morioka"
   :licence "LGPL"
   :depends-on (:trivial-utf-8
