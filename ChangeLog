@@ -1,3 +1,9 @@
+2026-04-08  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (generate-object-cid): Use `ipld-put' directly
+	for `g-spec' and `structure-spec'; don't use
+	`json-encode-bare-ccs-spec' and `encode-json-feature-spec'.
+
 2026-04-06  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.asd (version): Update to "1.9".
