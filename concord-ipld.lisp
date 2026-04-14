@@ -162,15 +162,10 @@
 	 (setq u-cid
 	       (cond
 		 (g-spec
-		  (ipld-put (json-encode-bare-ccs-spec g-spec)
-			    :json-input t)
+		  (ipld-put g-spec)
 		  )
 		 (structure-spec
-		  (ipld-put (let ((json:*lisp-identifier-name-to-json* #'identity)
-				  (s (make-string-output-stream)))
-			      (encode-json-feature-spec structure-spec s)
-			      (get-output-stream-string s))
-			    :json-input t)
+		  (ipld-put structure-spec)
 		  )
 		 (node-spec
 		  (ipld-put (let ((json:*lisp-identifier-name-to-json* #'identity)
