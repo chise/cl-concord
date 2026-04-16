@@ -70,21 +70,6 @@
        (concatenate 'string dest "]")
        ))))
 
-(defun json-encode-bare-ccs-spec (spec)
-  (let (dest)
-    (setq dest
-	  (apply #'concatenate
-		 'string
-		 (mapcar (lambda (pair)
-			   (format
-			    nil
-			    ",\"~a\":~a"
-			    (car pair)
-			    (json-encode-vector-with-sort (cdr pair))))
-			 spec)))
-    (setf (aref dest 0) #\{)
-    (concatenate 'string dest "}")))       
-
 (defun sequence-list-p (object)
   (cond ((null object))
 	((consp object)
