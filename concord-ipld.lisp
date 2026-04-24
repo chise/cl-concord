@@ -18,11 +18,9 @@
 				(s (make-string-output-stream)))
 			    (encode-json data s)
 			    (get-output-stream-string s)))))))
-	(read-from-string
-	 (ipfs::ipfs-call "dag/put" `(("pin" ,pin))
-			  :parameters `((:stream ,in)))))
-      (ipfs-cbor-put
-       (dasl:encode data) :pin pin)))
+	(ipfs::ipfs-call "dag/put" `(("pin" ,pin))
+			 :parameters `((:stream ,in))))
+      (ipfs-cbor-put (dasl:encode data) :pin pin)))
 
 (defun ipld-get (cid)
   (trivial-utf-8:utf-8-bytes-to-string (map 'vector #'char-code (ipfs::ipfs-call "dag/get" `(("arg" ,cid))))))
@@ -41,6 +39,13 @@
 		  )))
      output)))
 
+(defun normalize-structure-spec! (structure-spec)
+  (dolist (cell (cdr (assoc 'ideographic-structure
+			    structure-spec)))
+    (setf (getf (cdr cell) :value)
+	  (mapcar #'concord::normalize-object-representation
+		  (getf (cdr cell) :value)))))
+
 (defmethod generate-object-cid ((g genre) spec)
   (cond
     ((eql (genre-name g) 'character)
@@ -51,14 +56,16 @@
 		       (ipld-put g-spec)
 		       )
 		      (structure-spec
+		       (normalize-structure-spec! structure-spec)
 		       (ipld-put structure-spec)
 		       ))))
 	 (if u-cid
-	     (ipld-put
-	      (format nil
-		      "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-		      granularity u-cid)
-	      :json-input t)
+	     (read-from-string
+	      (ipld-put
+	       (format nil
+		       "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
+		       granularity u-cid)
+	       :json-input t))
 	     (generate-object-id g))))
      )
     (t
@@ -226,7 +233,7 @@
 			 (get-output-stream-string s))
 		       1)))
 	(setq node-cid (ipld-put node-json-spec :json-input t))
-	(object-put obj "=_node-cid" node-cid)
+	(object-put obj "=_node-cid" (read-from-string node-cid))
 	)
       node-cid)))
 
