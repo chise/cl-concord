@@ -1,3 +1,11 @@
+2026-04-24  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (ipld-put): Return CID as string.
+	(normalize-structure-spec!): New function.
+	(generate-object-cid): Use `normalize-structure-spec!'; convert
+	CID to symbol.
+	(set-object-cid): Convert node-CID to symbol.
+
 2026-04-16  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* cl-concord.lisp (json-encode-bare-ccs-spec): Abolished.
