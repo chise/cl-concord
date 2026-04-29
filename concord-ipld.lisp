@@ -44,7 +44,13 @@
 			    structure-spec)))
     (setf (getf (cdr cell) :value)
 	  (mapcar #'concord::normalize-object-representation
-		  (getf (cdr cell) :value)))))
+		  (getf (cdr cell) :value))))
+  (dolist (cell (cdr (assoc 'ideographic-combination
+			    structure-spec)))
+    (setf (getf (cdr cell) :value)
+	  (mapcar #'concord::normalize-object-representation
+		  (getf (cdr cell) :value))))
+  )
 
 (defmethod generate-object-cid ((g genre) spec)
   (cond
