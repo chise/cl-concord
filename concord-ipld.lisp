@@ -68,10 +68,13 @@
 	 (if u-cid
 	     (read-from-string
 	      (ipld-put
-	       (format nil
-		       "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-		       granularity u-cid)
-	       :json-input t))
+	       `(("granularity" . ,granularity)
+		 ("spec" . (("/" . ,u-cid))))
+	       ;; (format nil
+	       ;; 	       "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
+	       ;; 	       granularity u-cid)
+	       ;; :json-input t
+	       ))
 	     (generate-object-id g))))
      )
     (t
