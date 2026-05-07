@@ -1,3 +1,8 @@
+2026-05-03  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (generate-object-cid): Don't use JSON for
+	`ipld-put'.
+
 2026-04-29  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (normalize-structure-spec!): Normalize
