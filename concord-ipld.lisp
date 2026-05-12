@@ -68,7 +68,8 @@
 	 (if u-cid
 	     (read-from-string
 	      (ipld-put
-	       `(("granularity" . ,granularity)
+	       `(("granularity" . ,(or granularity
+				       'abstract-character))
 		 ("spec" . (("/" . ,u-cid))))
 	       ;; (format nil
 	       ;; 	       "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
