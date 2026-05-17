@@ -1,3 +1,8 @@
+2026-05-12  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (generate-object-cid): Use
+	`abstract-character' as the default value of granularity.
+
 2026-05-03  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (generate-object-cid): Don't use JSON for
