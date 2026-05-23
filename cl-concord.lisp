@@ -444,7 +444,8 @@
        (progn
 	 (if (symbolp feature-name)
 	     (setq feature-name (format nil "~a" feature-name)))
-	 (eql (search "=decomposition" feature-name) 0))))
+	 (or (eql (search "=decomposition" feature-name) 0)
+	     (eql (search "=>decomposition" feature-name) 0)))))
 
 (defun products-feature-name-p (feature-name)
   (and (not (metadata-feature-name-p feature-name))
@@ -746,6 +747,16 @@
 	       (setq granularity-rank rank 
 		     granularity gname))))))
     (values granularity granularity-rank)))
+
+(defun est-func-to-object-rep (unit)
+  (if (listp unit)
+      (list* :type (car unit)
+	     :description (nth 2 unit)
+	     (nth 1 unit))
+      unit))
+
+(defun est-text-to-object-rep-vector (est-text)
+  (map 'vector #'est-func-to-object-rep est-text))
 
 (defun character-sequence-granularity (character-sequence)
   (let ((granularity-rank -1)
