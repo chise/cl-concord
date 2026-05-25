@@ -71,10 +71,6 @@
 	       `(("granularity" . ,(or granularity
 				       'abstract-character))
 		 ("spec" . (("/" . ,u-cid))))
-	       ;; (format nil
-	       ;; 	       "{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-	       ;; 	       granularity u-cid)
-	       ;; :json-input t
 	       ))
 	     (generate-object-id g))))
      )
@@ -101,8 +97,10 @@
 			  (setq value-obj item)
 			  (setq key nil)
 			  )
-			 ((eq key :references)
+			 ((or (eq key :references)
+			      (eq key :note))
 			  (prog1
+			      ;; (print (list key (est-text-to-object-rep-vector item)))
 			      (list (cons (format nil "~a" key)
 					  (map 'vector
 					       (lambda (ref-item)
@@ -139,12 +137,17 @@
 	    value-meta))))
 
 (defun domain-spec-expand-value-to-triple-cid (domain-spec subject relation)
+  ;; (format t "[<] domain-spec = ~S~%" domain-spec)
   (setf (getf (cdr domain-spec) :value)
-	(map-into (getf (cdr domain-spec) :value)
-		  (lambda (item)
-		    (list (cons "/"
-				(expand-value-to-triple-cid item subject relation))))
-		  (getf (cdr domain-spec) :value)))
+	(map 'vector
+	     (lambda (item)
+	       ;;(print
+	       (list (cons "/"
+			   (expand-value-to-triple-cid item subject relation)))
+	       ;;)
+	       )
+	     (getf (cdr domain-spec) :value)))
+  ;; (format t "[>] domain-spec = ~S~%" domain-spec)
   (let ((sources (getf (cdr domain-spec) :sources)))
     (when sources
       (setf (getf (cdr domain-spec) :sources)
@@ -153,6 +156,7 @@
 	       (or (decode-object '=chise-bib-id bid :genre 'bibliography)
 		   bid))
 	     sources))))
+  ;; (format t "domain-spec = ~S~%" domain-spec)
   domain-spec)
 
 (defun feature-domain-spec-expand-value-to-triple-cid (feature-domain-spec subject)
@@ -190,6 +194,7 @@
 			      (concord::encode-json-category-spec node-spec s)
 			      (get-output-stream-string s))
 			    :json-input t)
+		  ;; (ipld-put node-spec)
 		  )
 		 (t
 		  (ipld-put `((=_id . ,id)))
@@ -234,10 +239,13 @@
 				     (list
 				      (cons "/"
 					    (ipld-put
+					     ;; (cdr cell)
 					     (let ((fss (make-string-output-stream)))
 					       (encode-json-feature-spec (cdr cell) fss)
 					       (get-output-stream-string fss))
-					     :json-input t)))))
+					     :json-input t
+					     )
+					    ))))
 				  node-spec)
 			  s)
 			 (get-output-stream-string s))
