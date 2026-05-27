@@ -1,3 +1,16 @@
+2026-05-25  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (expand-value-to-triple-cid): Treat `*note' as
+	the same as `*references'.
+	(domain-spec-expand-value-to-triple-cid): Convert value to vector.
+
+2026-05-23  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (decomposition-feature-name-p): Accept
+	`=>decomposition'.
+	(est-func-to-object-rep): New function.
+	(est-text-to-object-rep-vector): New function.
+
 2026-05-12  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (generate-object-cid): Use
