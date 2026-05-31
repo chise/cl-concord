@@ -143,14 +143,23 @@
 			   (expand-value-to-triple-cid item subject relation)))
 	       )
 	     (getf (cdr domain-spec) :value)))
-  (let ((sources (getf (cdr domain-spec) :sources)))
+  (let ((sources (getf (cdr domain-spec) :sources))
+	(references (getf (cdr domain-spec) :references))
+	(note (getf (cdr domain-spec) :note)))
     (when sources
       (setf (getf (cdr domain-spec) :sources)
 	    (mapcar
 	     (lambda (bid)
 	       (or (decode-object '=chise-bib-id bid :genre 'bibliography)
 		   bid))
-	     sources))))
+	     sources)))
+    (when references
+      (setf (getf (cdr domain-spec) :references)
+	    (est-text-to-object-rep-vector references)))
+    (when note
+      (setf (getf (cdr domain-spec) :note)
+	    (est-text-to-object-rep-vector note)))
+    )
   domain-spec)
 
 (defun feature-domain-spec-expand-value-to-triple-cid (feature-domain-spec subject)
@@ -165,7 +174,8 @@
   (let ((id (object-id obj))
 	(spec (object-spec obj))
 	(genre (object-genre obj))
-	u-cid ref-cid node-cid node-json-spec subj)
+	u-cid ref-cid node-cid ; node-json-spec
+	subj)
     (multiple-value-bind (g-spec granularity granularity-rank
 			  id-meta-list structure-spec node-spec rel-spec)
 	(separate-object-spec spec)
@@ -183,11 +193,6 @@
 		  (ipld-put structure-spec)
 		  )
 		 (node-spec
-		  ;; (ipld-put (let ((json:*lisp-identifier-name-to-json* #'identity)
-		  ;; 		  (s (make-string-output-stream)))
-		  ;; 	      (concord::encode-json-category-spec node-spec s)
-		  ;; 	      (get-output-stream-string s))
-		  ;; 	    :json-input t)
 		  (ipld-put node-spec)
 		  )
 		 (t
@@ -208,6 +213,7 @@
 		 (numberp id)
 		 (< id #xF0000))
 	    (setq subj (code-char id)))
+	;; (format t "rel-spec = ~S~%" rel-spec)
 	(setq node-spec
 	      (cons (cons 'relations
 			  (mapcar
@@ -217,34 +223,43 @@
 			   rel-spec))
 		    node-spec)))
       (when node-spec
-	(setq node-json-spec
-	      (format nil
-		      "{\"genre\":\"~a\",\"id\":\"~a\",\"ref\":{\"/\":\"~a\"},~a"
-		      (genre-name genre)
-		      id
-		      ref-cid
-		      (subseq
-		       (let ((json:*lisp-identifier-name-to-json* #'identity)
-			     (s (make-string-output-stream)))
-			 (json:encode-json
-			  (mapcar (lambda (cell)
-				    (cons
-				     (car cell)
-				     (list
-				      (cons "/"
-					    (ipld-put
-					     (cdr cell)
-					     ;; (let ((fss (make-string-output-stream)))
-					     ;;   (encode-json-feature-spec (cdr cell) fss)
-					     ;;   (get-output-stream-string fss))
-					     ;; :json-input t
-					     )
-					    ))))
-				  node-spec)
-			  s)
-			 (get-output-stream-string s))
-		       1)))
-	(setq node-cid (ipld-put node-json-spec :json-input t))
+	;; (setq node-json-spec
+	;;       (format nil
+	;; 	      "{\"genre\":\"~a\",\"id\":\"~a\",\"ref\":{\"/\":\"~a\"},~a"
+	;; 	      (genre-name genre)
+	;; 	      id
+	;; 	      ref-cid
+	;; 	      (subseq
+	;; 	       (let ((json:*lisp-identifier-name-to-json* #'identity)
+	;; 		     (s (make-string-output-stream)))
+	;; 		 (json:encode-json
+	;; 		  (mapcar (lambda (cell)
+	;; 			    (cons
+	;; 			     (car cell)
+	;; 			     (list
+	;; 			      (cons "/"
+	;; 				    (ipld-put (cdr cell))
+	;; 				    ))))
+	;; 			  node-spec)
+	;; 		  s)
+	;; 		 (get-output-stream-string s))
+	;; 	       1)))
+	;; (setq node-cid (ipld-put node-json-spec :json-input t))
+	(setq node-cid
+	      (ipld-put
+	       (list*
+		(cons "genre" (genre-name genre))
+		(cons "id" (format nil "~a" id))
+		(cons "ref" (list (cons "/" (format nil "~a" ref-cid))))
+		(mapcar (lambda (cell)
+			  (cons
+			   (car cell)
+			   (list
+			    (cons "/"
+				  (ipld-put (cdr cell))
+				  ))))
+			node-spec))
+	       ))
 	(object-put obj "=_node-cid" (read-from-string node-cid))
 	)
       node-cid)))
