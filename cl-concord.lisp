@@ -949,12 +949,15 @@
 		       (setq type (if (string= type "ideographic")
 				      'kangxi
 				      (read-from-string type)))
-		       (register-combined-feature-metadata
-			radical-strokes-alist
-			type domain
-			(read-from-string
-			 (format nil ":radical-number*~a" (nth 2 meta-spec)))
-			(cdr cell))
+		       (setq radical-strokes-alist
+			     (register-combined-feature-metadata
+			      radical-strokes-alist
+			      type domain
+			      (read-from-string
+			       (format nil
+				       ":radical-number*~a"
+				       (nth 2 meta-spec)))
+			      (cdr cell)))
 		       )
 		      ((setq pos (search "-strokes" fname-str))
 		       (setq type (subseq fname-str 0 pos))
@@ -1139,6 +1142,12 @@
 			   radical-strokes-alist
 			   type domain
 			   :body-strokes (cdr cell)))
+		    )
+		   ((eq base '*references)
+		    (setq misc-alist
+	      		  (register-combined-feature-value
+	     		   misc-alist base domain
+			   (est-text-to-object-rep-vector (cdr cell))))
 		    )
 		   (t
 		    (setq misc-alist
