@@ -1,3 +1,21 @@
+2026-06-02  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* cl-concord.lisp (separate-object-spec): Fixed; add setting for
+	`*references'.
+
+2026-05-31  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (domain-spec-expand-value-to-triple-cid): Use
+	`est-text-to-object-rep-vector' for :references and :note.
+	(set-object-cid): Don't use JSON for `ipld-put' to encode
+	`node-spec'.
+
+2026-05-27  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-ipld.lisp (set-object-cid): Use `ipld-put' directly to
+	avoid `concord::encode-json-category-spec' and
+	`encode-json-feature-spec'.
+
 2026-05-25  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (expand-value-to-triple-cid): Treat `*note' as
