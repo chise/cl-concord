@@ -36,6 +36,7 @@
    :ideographic-strokes :total-strokes
    :structure :ideographic-structure
    :ideographic-combination
+   :*references
    :misc
    :encode-json))
 
