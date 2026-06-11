@@ -174,7 +174,7 @@
   (let ((id (object-id obj))
 	(spec (object-spec obj))
 	(genre (object-genre obj))
-	u-cid ref-cid node-cid ; node-json-spec
+	u-cid ref-cid node-cid
 	subj)
     (multiple-value-bind (g-spec granularity granularity-rank
 			  id-meta-list structure-spec node-spec rel-spec)
@@ -199,10 +199,10 @@
 		  (ipld-put `((=_id . ,id)))
 		  )))
 	 (setq ref-cid (ipld-put
-			(format nil
-				"{\"granularity\": \"~a\",\"spec\":{\"/\":\"~a\"}}"
-				granularity u-cid)
-			:json-input t))
+			(list (cons "granularity"
+				    (format nil "~a" granularity))
+			      (cons "spec"
+				    (list (cons "/" (format nil "~a" u-cid)))))))
 	 ))
       (when structure-spec
 	(setq node-spec
@@ -223,28 +223,6 @@
 			   rel-spec))
 		    node-spec)))
       (when node-spec
-	;; (setq node-json-spec
-	;;       (format nil
-	;; 	      "{\"genre\":\"~a\",\"id\":\"~a\",\"ref\":{\"/\":\"~a\"},~a"
-	;; 	      (genre-name genre)
-	;; 	      id
-	;; 	      ref-cid
-	;; 	      (subseq
-	;; 	       (let ((json:*lisp-identifier-name-to-json* #'identity)
-	;; 		     (s (make-string-output-stream)))
-	;; 		 (json:encode-json
-	;; 		  (mapcar (lambda (cell)
-	;; 			    (cons
-	;; 			     (car cell)
-	;; 			     (list
-	;; 			      (cons "/"
-	;; 				    (ipld-put (cdr cell))
-	;; 				    ))))
-	;; 			  node-spec)
-	;; 		  s)
-	;; 		 (get-output-stream-string s))
-	;; 	       1)))
-	;; (setq node-cid (ipld-put node-json-spec :json-input t))
 	(setq node-cid
 	      (ipld-put
 	       (list*
