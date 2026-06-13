@@ -9,5 +9,4 @@
   :serial t
   :components ((:file "cl-concord")
 	       (:file "chise-support")
-	       (:file "concord-json")
 	       (:file "concord-ipld")))
