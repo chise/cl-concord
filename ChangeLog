@@ -1,3 +1,9 @@
+2026-06-13  MORIOKA Tomohiko  <tomo.git@chise.org>
+
+	* concord-json.lisp: Deleted.
+
+	* cl-concord.asd: Delete concord-json.lisp.
+
 2026-06-11  MORIOKA Tomohiko  <tomo.git@chise.org>
 
 	* concord-ipld.lisp (set-object-cid): Don't use JSON for
