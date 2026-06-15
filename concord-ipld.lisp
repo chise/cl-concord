@@ -128,8 +128,8 @@
        ))
     (setq arrow-cid
 	  (ipld-put
-	   (list (cons "from" (normalize-object-representation value-obj))
-		 (cons "to" (normalize-object-representation subject)))))
+	   (list (cons "from" (normalize-object-representation subject))
+		 (cons "to" (normalize-object-representation value-obj)))))
     (ipld-put
      (list* (list "body" (cons "/" arrow-cid))
 	    (cons "type" relation)
